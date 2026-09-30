@@ -7,6 +7,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { WorldState, RouteGeometry, AgentLog, SystemMode } from '../types/emergency';
 import { initialWorldState, disruptedWorldState } from '../data/mockBengaluruState';
 
+const DEFAULT_WS_URL =
+  (import.meta.env?.VITE_WS_URL as string | undefined) || 'ws://localhost:5000';
+
 export interface UseEmergencyStateReturn {
   worldState: WorldState;
   isMockMode: boolean;
@@ -37,13 +40,16 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const getTimestamp = () =>
+    new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
+
   /**
    * Action 1: Inject Disruption
    */
   const injectDisruption = useCallback(() => {
     setWorldState(disruptedWorldState);
     setSelectedIncidentId('INC-03');
-    setLastHeartbeat(new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST');
+    setLastHeartbeat(getTimestamp());
   }, []);
 
   /**
@@ -54,7 +60,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       if (!prev.pendingApproval) return prev;
 
       const approval = prev.pendingApproval;
-      const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
+      const timestamp = getTimestamp();
 
       // 1. Commit and finalize route polyline (solid cyan)
       const updatedRoutes: RouteGeometry[] = prev.activeRoutes
@@ -65,10 +71,10 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             resourceId: approval.resourceId,
             incidentId: approval.incidentId,
             coordinates: [
-              [77.6120, 12.9440],
-              [77.6145, 12.9520],
-              [77.6170, 12.9600],
-              [77.6180, 12.9680],
+              [77.612, 12.944],
+              [77.6145, 12.952],
+              [77.617, 12.96],
+              [77.618, 12.968],
               [77.6186, 12.9738],
             ],
             isPendingApproval: false,
@@ -150,7 +156,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       if (!prev.pendingApproval) return prev;
 
       const approval = prev.pendingApproval;
-      const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
+      const timestamp = getTimestamp();
 
       // 1. Remove pending route and restore original route
       const updatedRoutes: RouteGeometry[] = prev.activeRoutes
@@ -220,7 +226,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     setWorldState(initialWorldState);
     setSelectedIncidentId(null);
     setSelectedResourceId(null);
-    setLastHeartbeat(new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST');
+    setLastHeartbeat(getTimestamp());
   }, []);
 
   /**
@@ -254,27 +260,34 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       return;
     }
 
-    const wsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || 'ws://localhost:8000/ws/emergency';
     let isMounted = true;
 
     const connectWebSocket = () => {
       try {
-        const socket = new WebSocket(wsUrl);
+        const socket = new WebSocket(DEFAULT_WS_URL);
         socketRef.current = socket;
 
         socket.onopen = () => {
           if (!isMounted) return;
           setIsConnected(true);
-          setLastHeartbeat(new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST');
+          setLastHeartbeat(getTimestamp());
         };
 
         socket.onmessage = (event: MessageEvent<string>) => {
           if (!isMounted) return;
           try {
-            const data = JSON.parse(event.data) as unknown;
-            if (data && typeof data === 'object' && 'systemStatus' in data && 'activeIncidents' in data) {
-              setWorldState(data as WorldState);
-              setLastHeartbeat(new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST');
+            const payload = JSON.parse(event.data);
+
+            // Handle standard broadcast payload wrapper { event, data }
+            const stateData = payload?.data ?? payload;
+
+            if (
+              stateData &&
+              typeof stateData === 'object' &&
+              ('systemStatus' in stateData || 'activeIncidents' in stateData)
+            ) {
+              setWorldState(stateData as WorldState);
+              setLastHeartbeat(getTimestamp());
             }
           } catch {
             // Malformed packet ignored in stream
@@ -298,6 +311,11 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       } catch {
         if (isMounted) {
           setIsConnected(false);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMounted && !isMockMode) {
+              connectWebSocket();
+            }
+          }, 5000);
         }
       }
     };
@@ -346,7 +364,7 @@ export interface EmergencySocketData<TIncident = unknown, TResource = unknown, T
 }
 
 export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAssignment = unknown, TLog = unknown>(
-  wsUrl: string = 'ws://localhost:5000'
+  wsUrl: string = DEFAULT_WS_URL
 ) {
   const [data, setData] = useState<EmergencySocketData<TIncident, TResource, TAssignment, TLog>>({
     incidents: [],
@@ -355,6 +373,9 @@ export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAs
     logs: [],
   });
   const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -367,9 +388,18 @@ export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAs
         if (!res.ok) throw new Error(`HTTP error status ${res.status}`);
         return res.json();
       })
-      .then((initialData: Partial<EmergencySocketData<TIncident, TResource, TAssignment, TLog>>) => {
-        if (isMounted && initialData) {
-          setData((prev) => ({ ...prev, ...initialData }));
+      .then((resBody) => {
+        if (!isMounted) return;
+        // Unpack backend response envelope { status: "ok", data: state }
+        const initialData = resBody?.data ?? resBody;
+        if (initialData) {
+          setData((prev) => ({
+            ...prev,
+            incidents: initialData.incidents ?? prev.incidents,
+            resources: initialData.resources ?? prev.resources,
+            assignments: initialData.assignments ?? prev.assignments,
+            logs: initialData.decisionLogs ?? initialData.logs ?? prev.logs,
+          }));
         }
       })
       .catch((err: unknown) => {
@@ -377,43 +407,87 @@ export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAs
         console.error('Initial state fetch error:', err);
       });
 
-    // 2. Open live WebSocket connection
-    const socket = new WebSocket(wsUrl);
-
-    socket.onopen = () => {
-      if (isMounted) setIsConnected(true);
-    };
-
-    socket.onclose = () => {
-      if (isMounted) setIsConnected(false);
-    };
-
-    socket.onerror = (err) => {
-      console.error('WebSocket encountered an error:', err);
-      if (isMounted) setIsConnected(false);
-    };
-
-    socket.onmessage = (event: MessageEvent<string>) => {
-      if (!isMounted) return;
+    // 2. Resilient WebSocket connection loop
+    const connectSocket = () => {
       try {
-        const message = JSON.parse(event.data);
-        if (message.event === 'STATE_UPDATED') {
-          setData(message.data);
-        } else if (message.event === 'DECISION_LOG_ADDED') {
-          setData((prev) => ({
-            ...prev,
-            logs: [message.data, ...(prev.logs || [])],
-          }));
+        const socket = new WebSocket(wsUrl);
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+          if (isMounted) setIsConnected(true);
+        };
+
+        socket.onclose = () => {
+          if (!isMounted) return;
+          setIsConnected(false);
+          reconnectTimeoutRef.current = setTimeout(connectSocket, 5000);
+        };
+
+        socket.onerror = (err) => {
+          console.error('WebSocket encountered an error:', err);
+          if (isMounted) setIsConnected(false);
+        };
+
+        socket.onmessage = (event: MessageEvent<string>) => {
+          if (!isMounted) return;
+          try {
+            const message = JSON.parse(event.data);
+            switch (message.event) {
+              case 'STATE_UPDATED': {
+                const updated = message.data;
+                setData((prev) => ({
+                  ...prev,
+                  incidents: updated.incidents ?? prev.incidents,
+                  resources: updated.resources ?? prev.resources,
+                  assignments: updated.assignments ?? prev.assignments,
+                  logs: updated.decisionLogs ?? updated.logs ?? prev.logs,
+                }));
+                break;
+              }
+              case 'DECISION_LOG_ADDED':
+              case 'EXPLANATION_EMITTED': {
+                setData((prev) => ({
+                  ...prev,
+                  logs: [message.data, ...(prev.logs || [])],
+                }));
+                break;
+              }
+              case 'DISRUPTION_TRIGGERED': {
+                const { resource, affectedIncident, disruptionLog } = message.data || {};
+                setData((prev) => ({
+                  ...prev,
+                  resources: prev.resources.map((r: any) => (r._id === resource?._id ? resource : r)),
+                  incidents: prev.incidents.map((i: any) => (i._id === affectedIncident?._id ? affectedIncident : i)),
+                  logs: disruptionLog ? [disruptionLog, ...(prev.logs || [])] : prev.logs,
+                }));
+                break;
+              }
+            }
+          } catch (err) {
+            console.error('WS Parse error:', err);
+          }
+        };
+      } catch {
+        if (isMounted) {
+          setIsConnected(false);
+          reconnectTimeoutRef.current = setTimeout(connectSocket, 5000);
         }
-      } catch (err) {
-        console.error('WS Parse error:', err);
       }
     };
+
+    connectSocket();
 
     return () => {
       isMounted = false;
       controller.abort();
-      socket.close();
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      if (reconnectTimeoutRef.current !== null) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
   }, [wsUrl]);
 
