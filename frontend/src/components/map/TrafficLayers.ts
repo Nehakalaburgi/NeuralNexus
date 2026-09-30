@@ -141,7 +141,7 @@ function buildTrafficGeoJSON(segments: TrafficSegment[]): GeoJSON.FeatureCollect
  */
 export function initTrafficLayers(
   map: Map,
-  showTraffic: boolean,
+  showTraffic: boolean = true,
   customSegments: TrafficSegment[] = BENGALURU_DEFAULT_TRAFFIC_CORRIDORS
 ): void {
   if (!map.isStyleLoaded()) {

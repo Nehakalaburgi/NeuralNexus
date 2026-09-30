@@ -33,42 +33,44 @@ export const AgentTelemetry: React.FC<AgentTelemetryProps> = ({ logs, systemStat
     }
   }, [logs, isCollapsed]);
 
-  const getAgentBadge = (agent: AgentName) => {
-    switch (agent) {
-      case 'TRIAGE':
-        return (
-          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-950/90 border border-purple-500/80 text-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.4)] flex items-center gap-1 shrink-0">
-            <Activity className="w-2.5 h-2.5 text-purple-400" />
-            TRIAGE
-          </span>
-        );
-      case 'LOGISTICS':
-        return (
-          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950/90 border border-cyan-500/80 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.4)] flex items-center gap-1 shrink-0">
-            <Zap className="w-2.5 h-2.5 text-cyan-400" />
-            LOGISTICS
-          </span>
-        );
-      case 'ALLOCATION':
-        return (
-          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.4)] flex items-center gap-1 shrink-0">
-            <Radio className="w-2.5 h-2.5 text-emerald-400" />
-            ALLOCATION
-          </span>
-        );
-      case 'COMMAND':
-        return (
-          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-950/90 border border-amber-500/80 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.4)] flex items-center gap-1 shrink-0">
-            <Shield className="w-2.5 h-2.5 text-amber-400" />
-            COMMAND
-          </span>
-        );
+  const getAgentBadge = (agent?: AgentName | string) => {
+    const norm = (agent || 'COMMAND').toUpperCase();
+    if (norm.includes('TRIAGE')) {
+      return (
+        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-950/90 border border-purple-500/80 text-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.4)] flex items-center gap-1 shrink-0">
+          <Activity className="w-2.5 h-2.5 text-purple-400" />
+          TRIAGE
+        </span>
+      );
     }
+    if (norm.includes('LOGISTICS')) {
+      return (
+        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950/90 border border-cyan-500/80 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.4)] flex items-center gap-1 shrink-0">
+          <Zap className="w-2.5 h-2.5 text-cyan-400" />
+          LOGISTICS
+        </span>
+      );
+    }
+    if (norm.includes('ALLOCATION')) {
+      return (
+        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.4)] flex items-center gap-1 shrink-0">
+          <Radio className="w-2.5 h-2.5 text-emerald-400" />
+          ALLOCATION
+        </span>
+      );
+    }
+    return (
+      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-950/90 border border-amber-500/80 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.4)] flex items-center gap-1 shrink-0">
+        <Shield className="w-2.5 h-2.5 text-amber-400" />
+        COMMAND
+      </span>
+    );
   };
 
   const filteredLogs = logs.filter((log) => {
     if (selectedAgentFilter === 'ALL') return true;
-    return log.agentName === selectedAgentFilter;
+    const name = log.agentName || (log.agentType ? (log.agentType.replace('_AGENT', '') as AgentName) : 'COMMAND');
+    return name === selectedAgentFilter;
   });
 
   return (

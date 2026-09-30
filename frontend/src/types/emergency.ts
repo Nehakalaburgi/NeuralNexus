@@ -1,8 +1,15 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
  * Core TypeScript Data Contracts & Domain Models
- * Strict Mode Enforced: Zero Placeholders, No `any`, No `@ts-ignore`
+ * Strict Mode Enforced: Comprehensive Type Support
  */
+
+export type VehiclePhase =
+  | 'DISPATCHED_TO_SCENE'
+  | 'ON_SCENE_TRIAGING'
+  | 'EVACUATING_TO_HOSPITAL'
+  | 'ADMITTED_AT_HOSPITAL'
+  | 'AVAILABLE';
 
 /**
  * Incident Severity Classification
@@ -17,15 +24,21 @@ export type SeverityLevel = 1 | 2 | 3 | 4 | 5;
 /**
  * Operational lifecycle stages of an emergency incident
  */
-export type IncidentStatus = 'PENDING' | 'TRIAGED' | 'ASSIGNED' | 'RESOLVED';
+export type IncidentStatus =
+  | 'REPORTED'
+  | 'PENDING'
+  | 'TRIAGED'
+  | 'ASSIGNED'
+  | 'ON_SCENE'
+  | 'RESOLVED';
 
 /**
  * Emergency Response Unit Categories
  */
-export type ResourceType = 'AMBULANCE' | 'FIRE_TRUCK' | 'RESCUE_TEAM';
+export type ResourceType = 'AMBULANCE' | 'FIRE_TRUCK' | 'POLICE_PATROL' | 'RESCUE_TEAM';
 
 /**
- * Real-time operational state of a fleet unit across the 2-leg emergency mission lifecycle
+ * Real-time operational state of a fleet unit across the emergency mission lifecycle
  */
 export type ResourceStatus =
   | 'IDLE'
@@ -42,7 +55,8 @@ export type ResourceStatus =
   | 'MISSION_RESOLVED'
   | 'AVAILABLE'
   | 'UNAVAILABLE'
-  | 'REROUTED';
+  | 'REROUTED'
+  | 'MAINTENANCE';
 
 /**
  * Autonomous Multi-Agent System Member Identifiers
@@ -52,7 +66,7 @@ export type AgentName = 'TRIAGE' | 'LOGISTICS' | 'ALLOCATION' | 'COMMAND';
 /**
  * Severity level for telemetry logs
  */
-export type LogSeverity = 'INFO' | 'WARN' | 'CRITICAL';
+export type LogSeverity = 'INFO' | 'MEDIUM' | 'WARN' | 'HIGH' | 'CRITICAL';
 
 /**
  * Urgency tag for Human-In-The-Loop approvals
@@ -95,15 +109,18 @@ export interface IncidentLocation extends GeoLocation {
 export interface Incident {
   id: string;
   title: string;
+  type?: 'FIRE' | 'MEDICAL' | 'TRAFFIC_ACCIDENT' | 'COLLAPSE' | string;
   severity: SeverityLevel;
   location: IncidentLocation;
+  address?: string;
   status: IncidentStatus;
-  requiredResources: ResourceType[];
+  requiredResources: ResourceType[] | string[];
   assignedResourceId?: string;
   assignedResourceIds?: string[];
   targetHospitalId?: string;
   matchedSpecialty?: string;
-  reportedAt: string;
+  reportedAt?: string;
+  timestamp?: string;
   description?: string;
 }
 
@@ -161,13 +178,14 @@ export interface Resource {
   type: ResourceType;
   status: ResourceStatus;
   location: GeoLocation;
+  heading?: number;
+  phase?: VehiclePhase;
   baseHospitalId?: string;
   currentEtaMinutes?: number;
   distanceRemainingKm?: number;
   assignedIncidentId?: string;
   targetHospitalId?: string;
   targetHospitalName?: string;
-  heading?: number;
   trafficStatus?: UnitTrafficStatus;
   trafficDelayMinutes?: number;
   trafficSavingsMinutes?: number;
@@ -191,9 +209,9 @@ export interface Hospital {
   location: GeoLocation;
   availableBeds: number;
   totalBeds: number;
+  specialization?: string;
   traumaLevel?: number;
   address?: string;
-  specialization?: string;
   specialties?: string[];
 }
 
@@ -216,11 +234,12 @@ export interface RouteGeometry {
   resourceId?: string;
   incidentId?: string;
   hospitalId?: string;
+  targetHospitalId?: string;
   type?: RouteType;
-  legType?: 'DISPATCH_LEG' | 'HOSPITAL_LEG' | 'DETOUR_LEG';
+  legType?: 'DISPATCH_LEG' | 'HOSPITAL_LEG' | 'HISTORIC_LEG' | 'DETOUR_LEG';
   coordinates: Coordinates[];
   isPendingApproval: boolean;
-  color: string;
+  color?: string;
   label?: string;
   totalDistanceKm?: number;
   distanceRemainingKm?: number;
@@ -236,10 +255,13 @@ export interface RouteGeometry {
 export interface AgentLog {
   id: string;
   timestamp: string;
-  agentName: AgentName;
+  agentName?: AgentName;
+  agentType?: 'LOGISTICS_AGENT' | 'COMMAND_AGENT' | 'TRIAGE_AGENT' | string;
   message: string;
   severity?: LogSeverity;
 }
+
+export type AgentDecisionLog = AgentLog;
 
 /**
  * Human-in-the-Loop (HITL) Unit Reallocation Request

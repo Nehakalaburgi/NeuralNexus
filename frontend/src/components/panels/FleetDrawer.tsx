@@ -19,6 +19,7 @@ import {
   Zap,
   Radio,
   Navigation,
+  Shield,
 } from 'lucide-react';
 import { Resource, Hospital, WorldMetrics, ResourceStatus } from '../../types/emergency';
 
@@ -75,6 +76,16 @@ export const FleetDrawer: React.FC<FleetDrawerProps> = ({
           badgeClass: 'bg-indigo-950/80 border-indigo-500/80 text-indigo-300',
           accentBorder: 'hover:border-indigo-500/80',
           selectedBorder: 'border-indigo-400 glow-cyan ring-1 ring-indigo-400',
+        };
+
+      case 'POLICE_PATROL':
+      default:
+        return {
+          icon: <Shield className="w-4 h-4 text-cyan-300" />,
+          badgeLabel: 'TACTICAL PATROL',
+          badgeClass: 'bg-cyan-950/80 border-cyan-500/80 text-cyan-300',
+          accentBorder: 'hover:border-cyan-500/80',
+          selectedBorder: 'border-cyan-400 glow-cyan ring-1 ring-cyan-400',
         };
     }
   };
