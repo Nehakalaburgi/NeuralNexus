@@ -156,8 +156,8 @@ export const INITIAL_RESOURCES: Resource[] = [
     type: 'FIRE_TRUCK',
     status: 'DISPATCHED',
     location: {
-      lat: 12.9740,
-      lng: 77.6250,
+      lat: 12.9610,
+      lng: 77.6360,
     },
     baseHospitalId: 'HOSP-03',
     currentEtaMinutes: 6,
@@ -186,8 +186,8 @@ export const INITIAL_RESOURCES: Resource[] = [
     type: 'AMBULANCE',
     status: 'DISPATCHED',
     location: {
-      lat: 12.9550,
-      lng: 77.6050,
+      lat: 12.9420,
+      lng: 77.6080,
     },
     baseHospitalId: 'HOSP-04',
     currentEtaMinutes: 4,
@@ -201,8 +201,8 @@ export const INITIAL_RESOURCES: Resource[] = [
     type: 'AMBULANCE',
     status: 'DISPATCHED',
     location: {
-      lat: 12.9760,
-      lng: 77.6000,
+      lat: 12.9738,
+      lng: 77.6186,
     },
     baseHospitalId: 'HOSP-02',
     currentEtaMinutes: 3,

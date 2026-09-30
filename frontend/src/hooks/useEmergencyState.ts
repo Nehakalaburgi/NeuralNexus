@@ -954,7 +954,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     selectedIncidentId,
     selectedResourceId,
     currentLifecycleStep,
-    activePhase: currentLifecycleStep,
+    activePhase: currentLifecycleStep <= 1 ? 1 : currentLifecycleStep === 2 ? 2 : 3,
     isAutoPilot,
     isPlaying,
     isPaused: !isPlaying,
@@ -971,7 +971,12 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     setPlaybackSpeed,
     onSetPlaybackSpeed: setPlaybackSpeed,
     triggerLifecycleStep,
-    triggerPhase: (phaseNumber: number) => triggerLifecycleStep(phaseNumber as EmergencyLifecycleStep),
+    triggerPhase: (phaseNumber: number) => {
+      if (phaseNumber === 1) step1Dispatch();
+      else if (phaseNumber === 2) step2TrafficGridlock();
+      else if (phaseNumber === 3) step5TransportPatient();
+      else triggerLifecycleStep(phaseNumber as EmergencyLifecycleStep);
+    },
     step1Dispatch,
     step2TrafficGridlock,
     step3OnSceneTriage,

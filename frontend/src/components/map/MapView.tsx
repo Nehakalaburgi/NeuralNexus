@@ -10,7 +10,7 @@ import {
   TrafficSegment,
   MapStyleId,
 } from '../../types/emergency';
-import { calculateBearing } from '../../utils/geoUtils';
+import { slicePolylineAtProgress } from '../../utils/geoUtils';
 import { initRouteLayers, updateRouteLayers } from './RouteLayers';
 import { initTrafficLayers } from './TrafficLayers';
 import { syncMarkers } from './MapMarkers';
@@ -38,11 +38,23 @@ export interface MapViewProps {
   onSelectTrafficSegment?: (segment: TrafficSegment) => void;
 }
 
+/**
+ * Shortest-arc angular interpolation to ensure smooth steering along curves
+ */
+function lerpAngle(start: number, end: number, factor: number): number {
+  let diff = (end - start) % 360;
+  if (diff < -180) diff += 360;
+  if (diff > 180) diff -= 360;
+  return (start + diff * factor + 360) % 360;
+}
+
 export const MapView: React.FC<MapViewProps> = ({
   worldState,
   isPaused = false,
   isPlaying = true,
   playbackSpeed = 1.0,
+  onSelectIncident,
+  onSelectResource,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -50,6 +62,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
   const animationFrameRef = useRef<number | null>(null);
   const progressRef = useRef<{ [routeId: string]: number }>({});
+  const bearingRef = useRef<{ [resourceId: string]: number }>({});
   const onSceneTimersRef = useRef<{ [resourceId: string]: number }>({});
   const [triageAlert, setTriageAlert] = useState<string | null>(null);
 
@@ -77,10 +90,9 @@ export const MapView: React.FC<MapViewProps> = ({
       initRouteLayers(map);
       mapRef.current = map;
       updateRouteLayers(map, worldState.activeRoutes);
-      syncMarkers(map, markersRef.current, worldState);
+      syncMarkers(map, markersRef.current, worldState, onSelectIncident, onSelectResource);
     });
 
-    // Extra safety resize after render
     const resizeTimer = setTimeout(() => {
       if (map && map.isStyleLoaded()) {
         map.resize();
@@ -100,14 +112,15 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!map || !map.isStyleLoaded()) return;
 
     updateRouteLayers(map, worldState.activeRoutes);
-    syncMarkers(map, markersRef.current, worldState);
-  }, [worldState]);
+    syncMarkers(map, markersRef.current, worldState, onSelectIncident, onSelectResource);
+  }, [worldState, onSelectIncident, onSelectResource]);
 
+  // 60fps Arc-Length Vehicle Traversal & Steering Ticker
   useEffect(() => {
     let lastTimestamp = performance.now();
 
     const animate = (currentTimestamp: number) => {
-      const deltaSeconds = (currentTimestamp - lastTimestamp) / 1000;
+      const deltaSeconds = Math.min(0.1, (currentTimestamp - lastTimestamp) / 1000);
       lastTimestamp = currentTimestamp;
 
       const shouldAnimate = !isPaused && isPlaying !== false;
@@ -121,61 +134,67 @@ export const MapView: React.FC<MapViewProps> = ({
           const resourceId = route.resourceId;
           if (!resourceId) return;
 
+          // 1. Handle on-scene stabilization pause
           if (onSceneTimersRef.current[resourceId] !== undefined) {
             const currentTimer = onSceneTimersRef.current[resourceId] ?? 0;
-            onSceneTimersRef.current[resourceId] = currentTimer - deltaSeconds;
-            if ((onSceneTimersRef.current[resourceId] ?? 0) <= 0) {
+            const updatedTimer = currentTimer - deltaSeconds;
+            onSceneTimersRef.current[resourceId] = updatedTimer;
+
+            if (updatedTimer <= 0) {
               delete onSceneTimersRef.current[resourceId];
               setTriageAlert(null);
+              // Reset progress to loop route smoothly in ongoing demonstration
+              progressRef.current[routeId] = 0;
             }
             return;
           }
 
+          // 2. Initialize or increment progress
           if (progressRef.current[routeId] === undefined) {
             progressRef.current[routeId] = 0;
           }
 
-          const effectiveSpeed = playbackSpeed ?? 1.0;
-          const baseSpeed = 0.045 * effectiveSpeed;
+          const effectiveSpeed = Math.max(0.1, playbackSpeed ?? 1.0);
+          // Standard full route travel duration (~16 seconds at 1.0x speed)
+          const baseProgressionRate = 0.0625 * effectiveSpeed;
           const currentProg = progressRef.current[routeId] ?? 0;
-          progressRef.current[routeId] = Math.min(
-            1.0,
-            currentProg + deltaSeconds * baseSpeed
+          const nextProg = Math.min(1.0, currentProg + deltaSeconds * baseProgressionRate);
+          progressRef.current[routeId] = nextProg;
+
+          // 3. Distance-based arc-length road interpolation
+          const sliced = slicePolylineAtProgress(coords, nextProg);
+          const currentPosition = sliced.position;
+          const targetBearing = sliced.bearing;
+
+          // 4. Smooth steering heading interpolation
+          const prevBearing = bearingRef.current[resourceId] ?? targetBearing;
+          const smoothedBearing = lerpAngle(
+            prevBearing,
+            targetBearing,
+            Math.min(1, deltaSeconds * 12)
           );
+          bearingRef.current[resourceId] = smoothedBearing;
 
-          const progress = progressRef.current[routeId] ?? 0;
-          const totalPoints = coords.length;
-          const currentPointIndex = Math.min(
-            Math.floor(progress * (totalPoints - 1)),
-            totalPoints - 2
-          );
-
-          const p1 = coords[currentPointIndex];
-          const p2 = coords[currentPointIndex + 1];
-          if (!p1 || !p2) return;
-
-          const segmentProgress = progress * (totalPoints - 1) - currentPointIndex;
-
-          const lng = p1[0] + (p2[0] - p1[0]) * segmentProgress;
-          const lat = p1[1] + (p2[1] - p1[1]) * segmentProgress;
-
-          const bearing = calculateBearing(p1, p2);
-
+          // 5. Update Mapbox vehicle marker position & directional rotation
           const marker = markersRef.current.get(resourceId);
           if (marker) {
-            marker.setLngLat([lng, lat]);
+            marker.setLngLat(currentPosition);
             const markerElement = marker.getElement();
-            const iconWrapper = markerElement.querySelector('.vehicle-icon') as HTMLElement;
+            const iconWrapper = markerElement.querySelector('.vehicle-icon') as HTMLElement | null;
             if (iconWrapper) {
-              iconWrapper.style.transform = `rotate(${bearing}deg)`;
+              iconWrapper.style.transform = `rotate(${smoothedBearing}deg)`;
             }
           }
 
-          if (progress >= 1.0 && route.legType === 'DISPATCH_LEG') {
+          // 6. Scene arrival trigger (4-second stabilization window)
+          if (nextProg >= 1.0) {
             if (onSceneTimersRef.current[resourceId] === undefined) {
               onSceneTimersRef.current[resourceId] = 4.0;
+              const isHospitalLeg = route.legType === 'HOSPITAL_LEG';
               setTriageAlert(
-                `[ON SCENE] Unit ${resourceId} stabilizing victim. Preparing evacuation...`
+                isHospitalLeg
+                  ? `[HOSPITAL ARRIVAL] Unit ${resourceId} delivered patient to Emergency Trauma ICU.`
+                  : `[ON SCENE] Unit ${resourceId} on-scene. Stabilizing patient & preparing evacuation...`
               );
             }
           }
@@ -196,9 +215,9 @@ export const MapView: React.FC<MapViewProps> = ({
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-slate-950">
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       {triageAlert && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full border border-amber-500/40 bg-slate-900/90 text-amber-300 text-xs font-mono shadow-2xl backdrop-blur-md flex items-center gap-2 animate-pulse">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 rounded-full border border-amber-500/50 bg-slate-900/95 text-amber-300 text-xs font-mono font-bold shadow-[0_0_25px_rgba(245,158,11,0.4)] backdrop-blur-md flex items-center gap-2.5 animate-pulse">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-          {triageAlert}
+          <span>{triageAlert}</span>
         </div>
       )}
     </div>
