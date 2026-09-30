@@ -915,6 +915,44 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       }
     });
 
+    socket.on('agent_status', (payload: any) => {
+      if (payload) {
+        setWorldState((prev) => ({
+          ...prev,
+          systemStatus: payload.status || 'ONLINE',
+          agentLogs: [
+            ...prev.agentLogs,
+            {
+              id: `log-agent-status-${Date.now()}`,
+              timestamp: getTimestamp(),
+              agentName: 'COMMAND',
+              message: `[BACKEND STREAM] Agent Cluster ONLINE: ${(payload.activeAgents || []).join(', ')}`,
+              severity: 'INFO',
+            },
+          ],
+        }));
+      }
+    });
+
+    socket.on('approval_confirmed', (payload: any) => {
+      if (payload && payload.log) {
+        setWorldState((prev) => ({
+          ...prev,
+          pendingApproval: null,
+          agentLogs: [
+            ...prev.agentLogs,
+            {
+              id: payload.log.id || `log-hitl-${Date.now()}`,
+              timestamp: payload.log.timestamp || getTimestamp(),
+              agentName: 'COMMAND',
+              message: payload.log.message,
+              severity: 'CRITICAL',
+            },
+          ],
+        }));
+      }
+    });
+
     socket.on('approval_required', (payload: any) => {
       if (payload) {
         setWorldState((prev) => ({
@@ -930,6 +968,25 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             urgency: 'CRITICAL',
             timestamp: getTimestamp(),
           },
+        }));
+      }
+    });
+
+    socket.on('approval_rejected', (payload: any) => {
+      if (payload) {
+        setWorldState((prev) => ({
+          ...prev,
+          pendingApproval: null,
+          agentLogs: [
+            ...prev.agentLogs,
+            {
+              id: `log-reject-${Date.now()}`,
+              timestamp: getTimestamp(),
+              agentName: 'COMMAND',
+              message: `[HITL OVERRIDE] Operator rejected reallocation for incident ${payload.incidentId}.`,
+              severity: 'WARN',
+            },
+          ],
         }));
       }
     });
