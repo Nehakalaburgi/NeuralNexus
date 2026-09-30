@@ -54,9 +54,14 @@ export const App: React.FC = () => {
 
   const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
   const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
+  const [is3DView, setIs3DView] = useState<boolean>(false);
 
   const toggleTrafficOverlay = () => {
     setShowTrafficOverlay((prev) => !prev);
+  };
+
+  const toggle3DView = () => {
+    setIs3DView((prev) => !prev);
   };
 
   return (
@@ -68,10 +73,12 @@ export const App: React.FC = () => {
         selectedResourceId={selectedResourceId}
         activeMapStyle={activeMapStyle}
         showTrafficOverlay={showTrafficOverlay}
+        is3DView={is3DView}
         isPlaying={isPlaying}
         playbackSpeed={playbackSpeed}
         onSelectMapStyle={setActiveMapStyle}
         onToggleTrafficOverlay={toggleTrafficOverlay}
+        onToggle3DView={toggle3DView}
         onSelectIncident={(incident) => selectIncident(incident.id)}
         onSelectResource={(resource) => selectResource(resource.id)}
       />
@@ -84,8 +91,10 @@ export const App: React.FC = () => {
         lastHeartbeat={lastHeartbeat}
         activeMapStyle={activeMapStyle}
         showTrafficOverlay={showTrafficOverlay}
+        is3DView={is3DView}
         onSelectMapStyle={setActiveMapStyle}
         onToggleTrafficOverlay={toggleTrafficOverlay}
+        onToggle3DView={toggle3DView}
         onToggleMockMode={toggleMockMode}
         onResetState={resetState}
       />

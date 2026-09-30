@@ -90,7 +90,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 1: INITIAL DISPATCH (Leg 1)
-   * Dispatched vehicle starts on primary road network en-route to incident
+   * Dispatched vehicle starts on primary road network en-route to incident in Neon Sky Blue (#38bdf8)
    */
   const step1Dispatch = useCallback(() => {
     setCurrentLifecycleStep(1);
@@ -106,7 +106,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
-        color: '#f97316', // Fire Engine Orange
+        color: '#38bdf8', // Neon Sky Blue Leg 1
         label: 'FIRE-01 Leg 1 Primary Route',
       },
       {
@@ -118,7 +118,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
-        color: '#06b6d4', // ALS Cyan
+        color: '#38bdf8', // Neon Sky Blue Leg 1
         label: 'AMB-03 Leg 1 Primary Route',
       },
       {
@@ -130,7 +130,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_01_INITIAL,
         isPendingApproval: false,
-        color: '#06b6d4', // ALS Cyan
+        color: '#38bdf8', // Neon Sky Blue Leg 1
         label: 'AMB-01 Leg 1 Primary Route',
       },
     ];
@@ -180,7 +180,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-GRID-${Date.now()}`,
       timestamp,
       agentName: 'LOGISTICS',
-      message: '[LOGISTICS] Gridlock detected on primary route (+11 min delay). Recalculating dynamic bypass.',
+      message: '[LOGISTICS] Bottleneck detected (+11 min). Recalculating dynamic bypass.',
       severity: 'CRITICAL',
     };
 
@@ -202,7 +202,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
-        color: '#f97316', // Fire Engine Orange
+        color: '#38bdf8', // Neon Sky Blue Leg 1
         label: 'FIRE-01 Leg 1 Primary Route',
       },
       {
@@ -214,7 +214,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
-        color: '#06b6d4', // ALS Cyan
+        color: '#38bdf8', // Neon Sky Blue Leg 1
         label: 'AMB-03 Leg 1 Primary Route',
       },
       {
@@ -271,8 +271,8 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * STEP 3: ON-SCENE ARRIVAL & TRIAGE
-   * Unit arrives at incident scene coordinates; status updates to ON_SCENE_TRIAGING with 4-5s triage timer
+   * STEP 3: ON-SCENE ARRIVAL & PATIENT STABILIZING (4s pause)
+   * Unit arrives at incident scene coordinates; status updates to ON_SCENE with 4s stabilizing timer
    */
   const step3OnSceneTriage = useCallback(() => {
     setCurrentLifecycleStep(3);
@@ -282,7 +282,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-TRIAGE-${Date.now()}`,
       timestamp,
       agentName: 'TRIAGE',
-      message: '[TRIAGE] Step 3: Units arrived on-scene at Indiranagar 100ft Rd. Performing on-scene triage timer (4.5s)... Victim with 3rd-degree burns & smoke inhalation stabilized for emergency transport.',
+      message: '[TRIAGE] Step 3: Units arrived on-scene at Indiranagar 100ft Rd. Patient stabilizing (4s timer)... Victim with 3rd-degree burns & smoke inhalation stabilized for emergency transport.',
       severity: 'WARN',
     };
 
@@ -293,7 +293,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         if (r.id === 'AMB-03' || r.id === 'FIRE-01') {
           return {
             ...r,
-            status: 'ON_SCENE_TRIAGING' as const,
+            status: 'ON_SCENE' as const,
             lifecycleStep: 3,
             triageSecondsRemaining: 4,
             currentEtaMinutes: 0,
@@ -374,9 +374,9 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 5: HOSPITAL EVACUATION (Leg 2 Transport)
-   * Generates new Leg 2 route polyline (Incident -> Hospital in Medical Emerald #10b981)
-   * Vehicle status: PATIENT_LOADED_EVACUATING
-   * Marks Leg 1 route as subtle faded trail
+   * Generates new Leg 2 route polyline (Incident -> Hospital in Deep Cobalt Blue #2563eb)
+   * Vehicle status: EVACUATING_TO_HOSPITAL
+   * Marks Leg 1 route as subtle faded historic trail
    */
   const step5TransportPatient = useCallback(() => {
     setCurrentLifecycleStep(5);
@@ -392,7 +392,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 2,
         coordinates: ROUTE_COORDS_EVAC_BURN_VICTORIA,
         isPendingApproval: false,
-        color: '#10b981', // Medical Emerald Leg 2
+        color: '#2563eb', // Deep Cobalt Blue Leg 2
         label: 'AMB-03 Leg 2: Victoria Hospital Burn ICU Evacuation',
         currentEtaMinutes: 4.8,
         totalDistanceKm: 7.2,
@@ -406,7 +406,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
-        color: '#475569', // Subtle faded Leg 1 trail
+        color: '#1e3a8a', // Faint historic trail
         label: 'FIRE-01 On-Scene Indiranagar',
       },
       {
@@ -418,7 +418,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
-        color: '#334155', // Subtle historic trail
+        color: '#1e3a8a', // Faint historic trail
         label: 'AMB-03 Leg 1 Historic Trail',
       },
     ];
@@ -427,7 +427,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-EVAC-${Date.now()}`,
       timestamp,
       agentName: 'LOGISTICS',
-      message: '[LOGISTICS] Step 5: Code-3 Patient Evacuation underway: AMB-03 en route to Victoria Hospital Burn ICU along road-snapped emergency vector.',
+      message: '[LOGISTICS] Step 5: Code-3 Patient Evacuation underway: AMB-03 en route to Victoria Hospital Burn ICU along road-snapped emergency vector (Leg 2).',
       severity: 'CRITICAL',
     };
 
@@ -438,7 +438,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         if (r.id === 'AMB-03') {
           return {
             ...r,
-            status: 'PATIENT_LOADED_EVACUATING' as const,
+            status: 'EVACUATING_TO_HOSPITAL' as const,
             lifecycleStep: 5,
             targetHospitalId: 'HOSP-01',
             targetHospitalName: 'Victoria Hospital (Burn ICU Hub)',
@@ -456,8 +456,8 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * STEP 6: PATIENT DELIVERED & BED ALLOCATION
-   * Unit arrives at hospital gate; status updates to ARRIVED_HOSPITAL;
+   * STEP 6: PATIENT DELIVERED & BED ALLOCATION (-1 Bed)
+   * Unit arrives at hospital gate; status updates to ADMITTED_AT_HOSPITAL;
    * Target hospital available beds decrements in real-time (14 -> 13)
    */
   const step6PatientDelivered = useCallback(() => {
@@ -488,7 +488,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         if (r.id === 'AMB-03') {
           return {
             ...r,
-            status: 'ARRIVED_HOSPITAL' as const,
+            status: 'ADMITTED_AT_HOSPITAL' as const,
             lifecycleStep: 6,
             currentEtaMinutes: 0,
             distanceRemainingKm: 0,
@@ -503,8 +503,8 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * STEP 7: UNIT TURNAROUND & RESET TO AVAILABLE / IDLE
-   * Unit completes sanitization and resets to MISSION_RESOLVED / AVAILABLE / IDLE at base
+   * STEP 7: UNIT TURNAROUND & RESET TO AVAILABLE / READY
+   * Unit completes sanitization and resets to AVAILABLE / IDLE at base
    */
   const step7UnitAvailable = useCallback(() => {
     setCurrentLifecycleStep(7);
@@ -514,7 +514,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-AVAIL-${Date.now()}`,
       timestamp,
       agentName: 'COMMAND',
-      message: '[COMMAND AGENT] Patient safely admitted to Victoria Hospital (Burn ICU Hub) Emergency Triage. Unit AMB-03 restocked and available for redeployment.',
+      message: '[COMMAND AGENT] Patient safely admitted to Victoria Hospital (Burn ICU Hub) Emergency Triage. Unit AMB-03 restocked and AVAILABLE / READY for redeployment.',
       severity: 'INFO',
     };
 
@@ -524,7 +524,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         if (r.id === 'AMB-03') {
           return {
             ...r,
-            status: 'MISSION_RESOLVED' as const,
+            status: 'AVAILABLE' as const,
             lifecycleStep: 7,
             assignedIncidentId: undefined,
             targetHospitalId: undefined,

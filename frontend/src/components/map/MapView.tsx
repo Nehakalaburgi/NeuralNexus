@@ -26,6 +26,9 @@ import {
 import {
   syncRouteLayers,
   clearAllRouteLayers,
+  updateVehicleLivePath,
+  removeVehicleLivePath,
+  clearAllVehicleLivePaths,
 } from './RouteLayers';
 import {
   initTrafficLayers,
@@ -42,10 +45,12 @@ export interface MapViewProps {
   selectedResourceId?: string | null;
   activeMapStyle?: MapStyleId;
   showTrafficOverlay?: boolean;
+  is3DView?: boolean;
   isPlaying?: boolean;
   playbackSpeed?: number;
   onSelectMapStyle?: (style: MapStyleId) => void;
   onToggleTrafficOverlay?: () => void;
+  onToggle3DView?: () => void;
   onSelectIncident?: (incident: Incident) => void;
   onSelectResource?: (resource: Resource) => void;
   onSelectHospital?: (hospital: Hospital) => void;
@@ -88,10 +93,12 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedResourceId,
   activeMapStyle: externalMapStyle,
   showTrafficOverlay: externalShowTraffic,
+  is3DView: externalIs3DView,
   isPlaying = true,
   playbackSpeed = 1.0,
   onSelectMapStyle: externalOnSelectMapStyle,
   onToggleTrafficOverlay: externalOnToggleTraffic,
+  onToggle3DView: externalOnToggle3DView,
   onSelectIncident,
   onSelectResource,
   onSelectHospital,
@@ -112,7 +119,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const showTraffic = externalShowTraffic ?? internalShowTraffic;
 
   // 3D Tactical Camera State
-  const [is3DView, setIs3DView] = useState<boolean>(false);
+  const [internalIs3DView, setInternalIs3DView] = useState<boolean>(false);
+  const is3DView = externalIs3DView !== undefined ? externalIs3DView : internalIs3DView;
 
   const toggleTraffic = useCallback(() => {
     if (externalOnToggleTraffic) {
@@ -127,27 +135,29 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!map) return;
 
     if (!is3DView) {
-      // Animate camera to 3D Tactical View: pitch 55, bearing -25, zoom 14.5
-      map.flyTo({
+      // 3D Tactical View: pitch 55, bearing -20, zoom 14.2, duration 2000
+      map.easeTo({
         pitch: 55,
-        bearing: -25,
-        zoom: 14.5,
-        duration: 2200,
-        essential: true,
+        bearing: -20,
+        zoom: 14.2,
+        duration: 2000,
       });
-      setIs3DView(true);
     } else {
-      // Reset to 2D Strategic Overview: pitch 0, bearing 0, zoom 12.8
-      map.flyTo({
+      // Reset to 2D Strategic Overview: pitch 0, bearing 0, zoom 12.8, duration 1800
+      map.easeTo({
         pitch: 0,
         bearing: 0,
         zoom: 12.8,
         duration: 1800,
-        essential: true,
       });
-      setIs3DView(false);
     }
-  }, [is3DView]);
+
+    if (externalOnToggle3DView) {
+      externalOnToggle3DView();
+    } else {
+      setInternalIs3DView((prev) => !prev);
+    }
+  }, [is3DView, externalOnToggle3DView]);
 
   const handleStyleChange = useCallback((styleId: MapStyleId) => {
     if (externalOnSelectMapStyle) {
@@ -198,14 +208,14 @@ export const MapView: React.FC<MapViewProps> = ({
     mapRef.current = map;
     currentAppliedStyleRef.current = currentMapStyle;
 
-    // Tactical navigation controls (bottom-right) with 3D pitch visualization & interactive rotation
+    // Tactical navigation controls (top-right) with 3D pitch visualization & interactive rotation
     map.addControl(
       new mapboxgl.NavigationControl({
         showCompass: true,
         showZoom: true,
         visualizePitch: true,
       }),
-      'bottom-right'
+      'top-right'
     );
 
     map.addControl(
@@ -228,6 +238,7 @@ export const MapView: React.FC<MapViewProps> = ({
         animationFrameRef.current = null;
       }
       clearTrafficLayers(map);
+      clearAllVehicleLivePaths(map);
       clearAllRouteLayers(map);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
@@ -377,6 +388,10 @@ export const MapView: React.FC<MapViewProps> = ({
 
         // Only active dispatched / rerouted / transporting / on-scene / delivered units travel along or align with routes
         if (!isDispatched && !isRerouted && !isEvacuating && !isOnScene && !isDelivered) {
+          const map = mapRef.current;
+          if (map && map.isStyleLoaded()) {
+            removeVehicleLivePath(map, resource.id);
+          }
           return;
         }
 
@@ -468,6 +483,20 @@ export const MapView: React.FC<MapViewProps> = ({
           currentProgress,
           baseEtaMinutes
         );
+
+        // Live Two-Tone Blue Path Splitting: Faint historic blue trail for traversed + Neon Sky Blue (Leg 1) / Deep Cobalt Blue (Leg 2)
+        const map = mapRef.current;
+        if (map && map.isStyleLoaded()) {
+          updateVehicleLivePath(
+            map,
+            resource.id,
+            sliced.travelled,
+            sliced.remaining,
+            resource.id === selectedResourceId,
+            resource.type,
+            isLeg2
+          );
+        }
 
         // Dynamic distance & ETA telemetry computed from along-track arc-length progression
         const vehicleEntry = vehicleMarkersMapRef.current.get(resource.id);
@@ -696,33 +725,33 @@ export const MapView: React.FC<MapViewProps> = ({
       <div className="absolute top-18 left-20 z-10 pointer-events-none hidden md:flex flex-col gap-1.5 p-2.5 rounded-xl tactical-glass border border-slate-800/90 shadow-xl backdrop-blur-md max-w-[340px]">
         <div className="text-[9.5px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-slate-800/80 pb-1">
           <span>Active Fleet Corridors</span>
-          <span className="text-cyan-400">Live 60fps</span>
+          <span className="text-cyan-400">Two-Tone 60fps</span>
         </div>
         <div className="space-y-1 text-[9px] font-mono">
           <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.9)]" />
-            <span className="text-cyan-300 font-semibold">Ambulance Dispatch: Cyan (#06b6d4)</span>
+            <span className="w-4 h-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)]" />
+            <span className="text-sky-300 font-semibold">Leg 1 Dispatch: Neon Sky Blue (#38bdf8)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.9)]" />
-            <span className="text-orange-300 font-semibold">Fire Engine Vector: Orange (#f97316)</span>
+            <span className="w-4 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.95)]" />
+            <span className="text-blue-300 font-semibold">Leg 2 Evacuation: Deep Cobalt Blue (#2563eb)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.95)]" />
-            <span className="text-emerald-300 font-semibold">Hospital Evacuation: Emerald (#10b981)</span>
+            <span className="w-4 h-1.5 rounded-full bg-blue-950 border border-blue-600/40 opacity-70" />
+            <span className="text-slate-400 font-medium">Traversed Road: Faint Historic Trail (35%)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <span className="w-4 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.9)]" />
-            <span className="text-amber-300 font-semibold">Dynamic Detour / Reallocation: Amber (#f59e0b)</span>
+            <span className="text-amber-300 font-semibold">Dynamic Detour / Bypass: Amber (#f59e0b)</span>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <span className="w-4 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse" />
-            <span className="text-red-400 font-bold">Traffic Congestion Gridlock (Red)</span>
+            <span className="text-red-400 font-bold">Traffic Gridlock Bottleneck (Red #ef4444)</span>
           </div>
           {showTraffic && (
             <div className="flex items-center gap-2 text-slate-300 pt-1 border-t border-slate-800/60">
-              <span className="w-4 h-1.5 rounded bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-              <span className="text-red-300">Real-Time Traffic Bottleneck Overlay</span>
+              <span className="w-4 h-1.5 rounded bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+              <span className="text-orange-300">Live Congestion Monitoring Overlay</span>
             </div>
           )}
         </div>

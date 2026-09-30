@@ -18,6 +18,7 @@ import {
   Satellite,
   Map as MapIcon,
   Activity,
+  Compass,
 } from 'lucide-react';
 import { WorldState, MapStyleId } from '../../types/emergency';
 
@@ -28,8 +29,10 @@ export interface TopNavProps {
   lastHeartbeat: string | null;
   activeMapStyle?: MapStyleId;
   showTrafficOverlay?: boolean;
+  is3DView?: boolean;
   onSelectMapStyle?: (style: MapStyleId) => void;
   onToggleTrafficOverlay?: () => void;
+  onToggle3DView?: () => void;
   onToggleMockMode: () => void;
   onResetState?: () => void;
 }
@@ -41,8 +44,10 @@ export const TopNav: React.FC<TopNavProps> = ({
   lastHeartbeat,
   activeMapStyle = 'dark',
   showTrafficOverlay = true,
+  is3DView = false,
   onSelectMapStyle,
   onToggleTrafficOverlay,
+  onToggle3DView,
   onToggleMockMode,
   onResetState,
 }) => {
@@ -156,6 +161,22 @@ export const TopNav: React.FC<TopNavProps> = ({
               <span>Streets</span>
             </button>
           </div>
+        )}
+
+        {/* 3D Tactical View Toggle Button */}
+        {onToggle3DView && (
+          <button
+            onClick={onToggle3DView}
+            title="Toggle 3D Tactical Pitch & Bearing Perspective"
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+              is3DView
+                ? 'bg-indigo-950/80 text-indigo-300 border-indigo-500/80 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
+                : 'bg-slate-900/80 text-slate-500 border-slate-800 hover:text-slate-300'
+            }`}
+          >
+            <Compass className={`w-3 h-3 ${is3DView ? 'text-indigo-400' : 'text-slate-500'}`} />
+            <span>3D VIEW</span>
+          </button>
         )}
 
         {/* Traffic Overlay Toggle Button */}

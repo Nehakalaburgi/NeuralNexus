@@ -1,21 +1,26 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * GeoJSON Route Layers & Polylines Coordinator for Mapbox GL JS
- * Renders high-visibility, multi-layer tactical emergency response vectors
- * with semantic styling per route category:
- * - Dispatch & Tactical Response: Emergency Cyan (#06b6d4) / Fire Engine Orange (#f97316)
- * - Hospital Evacuation Corridors: Medical Emerald (#10b981) / Teal (#14b8a6)
- * - Dynamic Bypass Detours: High-Visibility Amber (#f59e0b)
- * - Traffic Congestion Bottlenecks: Glowing Crimson Red (#ef4444)
+ * GeoJSON Route Layers & Two-Tone Blue Polyline Engine for Mapbox GL JS
+ * Implements strict two-tone emergency vector visualization:
+ * - Leg 1 (Station -> Incident): Neon Sky Blue (#38bdf8) with cyan-blue glow
+ * - Leg 2 (Incident -> Hospital): Deep Cobalt Blue (#2563eb) with deep cobalt halo
+ * - Historic Traversed Trail: Faint low-opacity blue trail (#1e3a8a / opacity 0.35)
+ * - Congestion Bottleneck: Glowing Crimson Red (#ef4444)
+ * - Dynamic AI Bypass Detour: High-Visibility Amber (#f59e0b)
  */
 
 import type { Map, GeoJSONSource } from 'mapbox-gl';
 import { RouteGeometry, Coordinates } from '../../types/emergency';
 
 /**
- * Tracks currently rendered route layer and source IDs on the map canvas
+ * Set of active static route layer IDs rendered on the canvas
  */
 const activeRouteIds = new Set<string>();
+
+/**
+ * Set of active live vehicle path layer IDs
+ */
+const activeLiveVehicleIds = new Set<string>();
 
 /**
  * Synchronizes RouteGeometry arrays to Mapbox GeoJSON sources & layers
@@ -60,35 +65,41 @@ export function syncRouteLayers(
     const isEvacuation = route.type === 'EVACUATION' || route.id.startsWith('ROUTE-EVAC-');
     const isPending = route.isPendingApproval || route.type === 'REROUTE';
     const isDimmedOriginal = route.id.includes('ORIGINAL') && route.type !== 'CONGESTED_ORIGINAL';
+    const isFadedTrail = route.id.includes('FADED') || route.id.includes('TRAIL');
     const isCongested = route.isCongested || route.type === 'CONGESTED_ORIGINAL';
     const isDetour = route.type === 'DETOUR';
     const isHospitalTransport = route.type === 'HOSPITAL_TRANSPORT' || route.legNumber === 2;
+    const isLeg1 = route.legNumber === 1 || route.type === 'DISPATCH';
 
-    // Use route's defined semantic color with robust fallbacks
-    let routeColor = route.color || '#06b6d4';
-    let glowColor = routeColor;
-    let coreColor = '#ffffff';
+    // Two-Tone Blue & Tactical Color System
+    let routeColor = '#38bdf8'; // Default Neon Sky Blue (Leg 1)
+    let glowColor = '#0284c7';
+    let coreColor = '#e0f2fe';
 
     if (isCongested) {
-      routeColor = '#ef4444';
+      routeColor = '#ef4444'; // Glowing Red Gridlock
       glowColor = '#dc2626';
       coreColor = '#fecaca';
     } else if (isPending || isDetour) {
-      routeColor = '#f59e0b';
+      routeColor = '#f59e0b'; // Dynamic Amber Bypass
       glowColor = '#d97706';
       coreColor = '#fef3c7';
     } else if (isHospitalTransport || isEvacuation) {
-      routeColor = route.color || '#10b981';
-      glowColor = '#059669';
-      coreColor = '#d1fae5';
-    } else if (isDimmedOriginal) {
-      routeColor = '#475569';
-      glowColor = '#334155';
-      coreColor = '#94a3b8';
+      routeColor = '#2563eb'; // Deep Cobalt Blue (Leg 2)
+      glowColor = '#1d4ed8';
+      coreColor = '#dbeafe';
+    } else if (isFadedTrail || isDimmedOriginal) {
+      routeColor = '#1e3a8a'; // Faint Historic Blue Trail
+      glowColor = '#1e293b';
+      coreColor = '#334155';
+    } else if (isLeg1) {
+      routeColor = '#38bdf8'; // Neon Sky Blue (Leg 1)
+      glowColor = '#0284c7';
+      coreColor = '#ffffff';
     } else {
-      routeColor = route.color || '#06b6d4';
-      glowColor = '#0891b2';
-      coreColor = '#e0f2fe';
+      routeColor = route.color || '#38bdf8';
+      glowColor = '#0284c7';
+      coreColor = '#ffffff';
     }
 
     // Determine focus/selection state
@@ -97,19 +108,20 @@ export function syncRouteLayers(
     const isMatchingResource = selectedResourceId && route.resourceId === selectedResourceId;
     const isHighlighted = Boolean(isMatchingIncident || isMatchingResource);
 
-    let baseOpacity = hasSelection ? (isHighlighted ? 1.0 : 0.45) : (isDimmedOriginal ? 0.35 : 0.95);
-    let glowOpacity = hasSelection ? (isHighlighted ? 0.95 : 0.35) : (isDimmedOriginal ? 0.2 : 0.8);
-    let mainLineWidth = isHighlighted ? 6.2 : 5.0;
+    let baseOpacity = hasSelection ? (isHighlighted ? 1.0 : 0.45) : (isFadedTrail || isDimmedOriginal ? 0.35 : 0.95);
+    let glowOpacity = hasSelection ? (isHighlighted ? 0.95 : 0.35) : (isFadedTrail || isDimmedOriginal ? 0.2 : 0.8);
+    let mainLineWidth = isHighlighted ? 6.5 : 5.2;
     let casingLineWidth = mainLineWidth + 3.2;
-    let glowLineWidth = isHighlighted ? 22 : 16;
-    let coreLineWidth = isHighlighted ? 2.2 : 1.7;
+    let glowLineWidth = isHighlighted ? 24 : 18;
+    let coreLineWidth = isHighlighted ? 2.4 : 1.8;
 
     if (isCongested) {
-      mainLineWidth = isHighlighted ? 6.0 : 5.0;
-      glowLineWidth = isHighlighted ? 22 : 16;
-    } else if (isDimmedOriginal) {
+      mainLineWidth = isHighlighted ? 6.2 : 5.0;
+      glowLineWidth = isHighlighted ? 24 : 18;
+    } else if (isFadedTrail || isDimmedOriginal) {
       mainLineWidth = 3.5;
       glowLineWidth = 8;
+      casingLineWidth = 5.5;
     }
 
     casingLineWidth = mainLineWidth + 3.2;
@@ -197,7 +209,7 @@ export function syncRouteLayers(
       });
 
       // Layer 3: Main Vector Line
-      const dashArray = isCongested ? [2, 2] : isPending ? [3, 2] : isEvacuation ? [3, 3] : undefined;
+      const dashArray = isCongested ? [2, 2] : isPending ? [3, 2] : isEvacuation ? [4, 2] : undefined;
 
       map.addLayer({
         id: mainLayerId,
@@ -238,26 +250,209 @@ export function syncRouteLayers(
 }
 
 /**
- * Optional live vehicle path hook (clean no-op/fallback)
+ * Real-Time 60fps Dynamic Vehicle Live Path Visualizer
+ * Renders:
+ * 1. Faint, low-opacity historic blue trail for traversed road segment
+ * 2. High-intensity two-tone blue vector for upcoming road segment (Neon Sky Blue for Leg 1 / Deep Cobalt Blue for Leg 2)
  */
 export function updateVehicleLivePath(
-  _map: Map,
-  _vehicleId: string,
-  _travelledCoords: Coordinates[],
-  _remainingCoords: Coordinates[],
-  _isSelected: boolean = false,
+  map: Map,
+  vehicleId: string,
+  travelledCoords: Coordinates[],
+  remainingCoords: Coordinates[],
+  isSelected: boolean = false,
   _resourceType?: 'AMBULANCE' | 'FIRE_TRUCK' | 'RESCUE_TEAM',
-  _isLeg2HospitalTransport: boolean = false
+  isLeg2HospitalTransport: boolean = false
 ): void {
-  // Direct vector rendering managed by syncRouteLayers
+  if (!map.isStyleLoaded()) return;
+
+  const srcTravelledId = `live-src-travelled-${vehicleId}`;
+  const srcRemainingId = `live-src-remaining-${vehicleId}`;
+
+  const layerTravelledGlow = `live-lay-travelled-glow-${vehicleId}`;
+  const layerTravelledMain = `live-lay-travelled-main-${vehicleId}`;
+
+  const layerRemainingGlow = `live-lay-remaining-glow-${vehicleId}`;
+  const layerRemainingCasing = `live-lay-remaining-casing-${vehicleId}`;
+  const layerRemainingMain = `live-lay-remaining-main-${vehicleId}`;
+  const layerRemainingCore = `live-lay-remaining-core-${vehicleId}`;
+
+  // Two-tone color calibration
+  const remainingColor = isLeg2HospitalTransport ? '#2563eb' : '#38bdf8'; // Cobalt Blue for Leg 2, Neon Sky Blue for Leg 1
+  const remainingGlowColor = isLeg2HospitalTransport ? '#1d4ed8' : '#0284c7';
+  const remainingCoreColor = isLeg2HospitalTransport ? '#dbeafe' : '#ffffff';
+
+  const validTravelled: [number, number][] =
+    travelledCoords.length >= 2
+      ? (travelledCoords as [number, number][])
+      : travelledCoords.length === 1 && travelledCoords[0]
+      ? [travelledCoords[0], travelledCoords[0]]
+      : [];
+
+  const validRemaining: [number, number][] =
+    remainingCoords.length >= 2
+      ? (remainingCoords as [number, number][])
+      : remainingCoords.length === 1 && remainingCoords[0]
+      ? [remainingCoords[0], remainingCoords[0]]
+      : [];
+
+  const travelledData: GeoJSON.Feature<GeoJSON.LineString> = {
+    type: 'Feature',
+    properties: { id: vehicleId, segment: 'travelled' },
+    geometry: {
+      type: 'LineString',
+      coordinates: validTravelled,
+    },
+  };
+
+  const remainingData: GeoJSON.Feature<GeoJSON.LineString> = {
+    type: 'Feature',
+    properties: { id: vehicleId, segment: 'remaining' },
+    geometry: {
+      type: 'LineString',
+      coordinates: validRemaining,
+    },
+  };
+
+  // 1. Update or create Remaining Active Path Source
+  const existingRemainingSrc = map.getSource(srcRemainingId) as GeoJSONSource | undefined;
+  if (existingRemainingSrc) {
+    existingRemainingSrc.setData(remainingData);
+  } else if (remainingCoords.length >= 2) {
+    map.addSource(srcRemainingId, { type: 'geojson', data: remainingData });
+
+    // Glow
+    map.addLayer({
+      id: layerRemainingGlow,
+      type: 'line',
+      source: srcRemainingId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': remainingGlowColor,
+        'line-width': isSelected ? 22 : 16,
+        'line-opacity': isSelected ? 0.95 : 0.85,
+        'line-blur': 4,
+      },
+    });
+
+    // Casing
+    map.addLayer({
+      id: layerRemainingCasing,
+      type: 'line',
+      source: srcRemainingId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#020617',
+        'line-width': isSelected ? 9.5 : 8.0,
+        'line-opacity': 0.95,
+      },
+    });
+
+    // Main
+    map.addLayer({
+      id: layerRemainingMain,
+      type: 'line',
+      source: srcRemainingId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': remainingColor,
+        'line-width': isSelected ? 6.5 : 5.2,
+        'line-opacity': 1.0,
+      },
+    });
+
+    // Laser Core
+    map.addLayer({
+      id: layerRemainingCore,
+      type: 'line',
+      source: srcRemainingId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': remainingCoreColor,
+        'line-width': isSelected ? 2.5 : 1.8,
+        'line-opacity': 0.95,
+      },
+    });
+
+    activeLiveVehicleIds.add(vehicleId);
+  }
+
+  // 2. Update or create Faint Historic Blue Traversed Trail Source
+  const existingTravelledSrc = map.getSource(srcTravelledId) as GeoJSONSource | undefined;
+  if (existingTravelledSrc) {
+    existingTravelledSrc.setData(travelledData);
+  } else if (travelledCoords.length >= 2) {
+    map.addSource(srcTravelledId, { type: 'geojson', data: travelledData });
+
+    // Faint Trail Glow
+    map.addLayer({
+      id: layerTravelledGlow,
+      type: 'line',
+      source: srcTravelledId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#1e3a8a',
+        'line-width': 8,
+        'line-opacity': 0.25,
+        'line-blur': 3,
+      },
+    });
+
+    // Faint Trail Line
+    map.addLayer({
+      id: layerTravelledMain,
+      type: 'line',
+      source: srcTravelledId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 3.0,
+        'line-opacity': 0.35,
+        'line-dasharray': [2, 3],
+      },
+    });
+  }
 }
 
-export function removeVehicleLivePath(_map: Map, _vehicleId: string): void {
-  // No-op
+/**
+ * Removes dynamic live path layers for a vehicle
+ */
+export function removeVehicleLivePath(map: Map, vehicleId: string): void {
+  const layerIds = [
+    `live-lay-travelled-glow-${vehicleId}`,
+    `live-lay-travelled-main-${vehicleId}`,
+    `live-lay-remaining-glow-${vehicleId}`,
+    `live-lay-remaining-casing-${vehicleId}`,
+    `live-lay-remaining-main-${vehicleId}`,
+    `live-lay-remaining-core-${vehicleId}`,
+  ];
+
+  const sourceIds = [
+    `live-src-travelled-${vehicleId}`,
+    `live-src-remaining-${vehicleId}`,
+  ];
+
+  try {
+    layerIds.forEach((layId) => {
+      if (map.getLayer(layId)) map.removeLayer(layId);
+    });
+    sourceIds.forEach((srcId) => {
+      if (map.getSource(srcId)) map.removeSource(srcId);
+    });
+    activeLiveVehicleIds.delete(vehicleId);
+  } catch {
+    // Safe cleanup
+  }
 }
 
-export function clearAllVehicleLivePaths(_map: Map): void {
-  // No-op
+/**
+ * Clears all live vehicle paths
+ */
+export function clearAllVehicleLivePaths(map: Map): void {
+  activeLiveVehicleIds.forEach((vehicleId) => {
+    removeVehicleLivePath(map, vehicleId);
+  });
+  activeLiveVehicleIds.clear();
 }
 
 /**

@@ -221,77 +221,83 @@ export const INITIAL_RESOURCES: Resource[] = [
 ];
 
 /**
- * Baseline Active Routes (Multi-Tiered Tactical Emergency Corridors)
+ * Baseline Active Routes (Two-Tone Blue Emergency Corridors)
  */
 export const INITIAL_ROUTES: RouteGeometry[] = [
-  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Fire Engine Orange)
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-FIRE',
     resourceId: 'FIRE-01',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_FIRE_01,
     isPendingApproval: false,
-    color: '#f97316', // High-Visibility Fire Orange
+    color: '#38bdf8', // Neon Sky Blue Leg 1
     label: 'FIRE-01 Primary Response Vector',
   },
-  // 2. AMB-03 -> Indiranagar Fire INC-01 (ALS Cyan)
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-AMB',
     resourceId: 'AMB-03',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_03_FIRE,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue Leg 1
     label: 'AMB-03 ALS Dispatch Vector',
   },
-  // 3. AMB-01 -> Koramangala Cardiac INC-02 (ALS Cyan)
+  // 3. AMB-01 -> Koramangala Cardiac INC-02 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-02',
     resourceId: 'AMB-01',
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_01_INITIAL,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue Leg 1
     label: 'AMB-01 ALS Dispatch Vector',
   },
-  // 4. AMB-02 -> Central Corridor Standby Dispatch (BLS Cyan)
+  // 4. AMB-02 -> Central Corridor Standby Dispatch (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-02-DELTA',
     resourceId: 'AMB-02',
     incidentId: 'INC-03-STANDBY',
     hospitalId: 'HOSP-02',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_02_PATROL,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue Leg 1
     label: 'AMB-02 BLS Standby Vector',
   },
-  // 5. Evacuation Corridor: INC-01 Indiranagar -> HOSP-03 Manipal Hospital (Medical Emerald)
+  // 5. Evacuation Corridor: INC-01 Indiranagar -> HOSP-03 Manipal Hospital (Deep Cobalt Blue Leg 2)
   {
     id: 'ROUTE-EVAC-INC-01',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_01,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue Leg 2
     label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
   },
-  // 6. Evacuation Corridor: INC-02 Koramangala -> HOSP-04 St. John's Hospital (Medical Emerald)
+  // 6. Evacuation Corridor: INC-02 Koramangala -> HOSP-04 St. John's Hospital (Deep Cobalt Blue Leg 2)
   {
     id: 'ROUTE-EVAC-INC-02',
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_02,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue Leg 2
     label: 'INC-02 -> St. Johns Medical Evacuation Corridor',
   },
 ];
@@ -466,62 +472,67 @@ export const DISRUPTED_RESOURCES: Resource[] = [
  * Disrupted Routes (Including Pending Reallocation Route in Amber + Evacuation Corridors)
  */
 export const DISRUPTED_ROUTES: RouteGeometry[] = [
-  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Fire Orange)
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-FIRE',
     resourceId: 'FIRE-01',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_FIRE_01,
     isPendingApproval: false,
-    color: '#f97316', // Fire Engine Orange
+    color: '#38bdf8', // Neon Sky Blue
     label: 'FIRE-01 Active Response Vector',
   },
-  // 2. AMB-03 -> Indiranagar Fire INC-01 (ALS Cyan)
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-AMB',
     resourceId: 'AMB-03',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_03_FIRE,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue
     label: 'AMB-03 ALS Dispatch Vector',
   },
-  // 3. Evacuation Corridor: INC-01 -> HOSP-03 Manipal Hospital (Medical Emerald)
+  // 3. Evacuation Corridor: INC-01 -> HOSP-03 Manipal Hospital (Deep Cobalt Blue Leg 2)
   {
     id: 'ROUTE-EVAC-INC-01',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_01,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue
     label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
   },
-  // 4. Preempted route for AMB-01 to INC-02 (dimmed)
+  // 4. Preempted route for AMB-01 to INC-02 (faint trail)
   {
     id: 'ROUTE-02-ORIGINAL',
     resourceId: 'AMB-01',
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_01_INITIAL,
     isPendingApproval: false,
-    color: '#475569', // Dimmed original route
+    color: '#1e3a8a', // Faint historic trail
     label: 'AMB-01 Preempted Vector',
   },
-  // 5. Evacuation Corridor: INC-02 -> HOSP-04 St. John's
+  // 5. Evacuation Corridor: INC-02 -> HOSP-04 St. John's (Deep Cobalt Blue Leg 2)
   {
     id: 'ROUTE-EVAC-INC-02',
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_02,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue
     label: 'INC-02 -> St. Johns Evacuation Corridor',
   },
   // 6. Proposed Reallocation Route: AMB-01 -> MG Road Crash INC-03 (High-Visibility Amber)
@@ -531,6 +542,7 @@ export const DISRUPTED_ROUTES: RouteGeometry[] = [
     incidentId: 'INC-03',
     hospitalId: 'HOSP-02',
     type: 'REROUTE',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
     isPendingApproval: true,
     color: '#f59e0b', // Dynamic Amber diversion vector
@@ -542,9 +554,10 @@ export const DISRUPTED_ROUTES: RouteGeometry[] = [
     incidentId: 'INC-03',
     hospitalId: 'HOSP-02',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_03,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue
     label: 'INC-03 -> Bowring Trauma Evacuation Corridor',
   },
 ];
@@ -708,28 +721,30 @@ export const TRAFFIC_JAM_RESOURCES: Resource[] = [
  * Includes red flashing congested original segment + high-visibility amber dynamic detour vector
  */
 export const TRAFFIC_JAM_ROUTES: RouteGeometry[] = [
-  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Fire Orange)
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-FIRE',
     resourceId: 'FIRE-01',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_FIRE_01,
     isPendingApproval: false,
-    color: '#f97316', // Fire Engine Orange
+    color: '#38bdf8', // Neon Sky Blue
     label: 'FIRE-01 Primary Response Vector',
   },
-  // 2. AMB-03 -> Indiranagar Fire INC-01 (ALS Cyan)
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-01-AMB',
     resourceId: 'AMB-03',
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_03_FIRE,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue
     label: 'AMB-03 ALS Dispatch Vector',
   },
   // 3. Evacuation Corridor: INC-01 Indiranagar -> HOSP-03 Manipal Hospital
@@ -738,9 +753,10 @@ export const TRAFFIC_JAM_ROUTES: RouteGeometry[] = [
     incidentId: 'INC-01',
     hospitalId: 'HOSP-03',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_01,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue
     label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
   },
   // 4. Congested Original Route: Hosur Road Gridlock (Flashing Red Warning where Traffic is Present)
@@ -764,21 +780,23 @@ export const TRAFFIC_JAM_ROUTES: RouteGeometry[] = [
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'DETOUR',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
     isPendingApproval: false,
     color: '#f59e0b', // Dynamic Amber Bypass
     label: 'AMB-01 Active Bypass Route (Amber -8.8m saved)',
   },
-  // 6. AMB-02 -> Central Corridor Standby Dispatch (BLS Cyan)
+  // 6. AMB-02 -> Central Corridor Standby Dispatch (Neon Sky Blue Leg 1)
   {
     id: 'ROUTE-02-DELTA',
     resourceId: 'AMB-02',
     incidentId: 'INC-03-STANDBY',
     hospitalId: 'HOSP-02',
     type: 'DISPATCH',
+    legNumber: 1,
     coordinates: ROUTE_COORDS_AMB_02_PATROL,
     isPendingApproval: false,
-    color: '#06b6d4', // Emergency Cyan
+    color: '#38bdf8', // Neon Sky Blue
     label: 'AMB-02 BLS Standby Vector',
   },
   // 7. Evacuation Corridor: INC-02 Koramangala -> HOSP-04 St. John's Hospital
@@ -787,9 +805,10 @@ export const TRAFFIC_JAM_ROUTES: RouteGeometry[] = [
     incidentId: 'INC-02',
     hospitalId: 'HOSP-04',
     type: 'EVACUATION',
+    legNumber: 2,
     coordinates: ROUTE_COORDS_EVAC_INC_02,
     isPendingApproval: false,
-    color: '#10b981', // Medical Emerald
+    color: '#2563eb', // Deep Cobalt Blue
     label: 'INC-02 -> St. Johns Evacuation Corridor',
   },
 ];
