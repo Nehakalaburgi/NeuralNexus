@@ -68,7 +68,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
     map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
 
+    const handleResize = () => map.resize();
+    window.addEventListener('resize', handleResize);
+
     map.on('load', () => {
+      map.resize();
       initTrafficLayers(map, true);
       initRouteLayers(map);
       mapRef.current = map;
@@ -76,7 +80,16 @@ export const MapView: React.FC<MapViewProps> = ({
       syncMarkers(map, markersRef.current, worldState);
     });
 
+    // Extra safety resize after render
+    const resizeTimer = setTimeout(() => {
+      if (map && map.isStyleLoaded()) {
+        map.resize();
+      }
+    }, 250);
+
     return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       map.remove();
     };
@@ -180,10 +193,10 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [worldState, isPaused, isPlaying, playbackSpeed]);
 
   return (
-    <div className="relative w-full h-full min-h-[600px] overflow-hidden bg-slate-950">
-      <div ref={mapContainerRef} className="w-full h-full" />
+    <div className="absolute inset-0 w-full h-full overflow-hidden bg-slate-950">
+      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       {triageAlert && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full border border-amber-500/40 bg-slate-900/90 text-amber-300 text-xs font-mono shadow-2xl backdrop-blur-md flex items-center gap-2 animate-pulse">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full border border-amber-500/40 bg-slate-900/90 text-amber-300 text-xs font-mono shadow-2xl backdrop-blur-md flex items-center gap-2 animate-pulse">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
           {triageAlert}
         </div>

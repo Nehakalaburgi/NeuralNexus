@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEmergencyState } from './hooks/useEmergencyState';
 import { MapView } from './components/map/MapView';
 import { TopNav } from './components/layout/TopNav';
@@ -7,6 +7,7 @@ import { ApprovalModal } from './components/modals/ApprovalModal';
 import { AgentTelemetry } from './components/panels/AgentTelemetry';
 import { FleetDrawer } from './components/panels/FleetDrawer';
 import { IncidentDrawer } from './components/panels/IncidentDrawer';
+import { MapStyleId } from './types/emergency';
 
 export const App: React.FC = () => {
   const {
@@ -23,59 +24,82 @@ export const App: React.FC = () => {
     togglePause,
     setPlaybackSpeed,
     resetSimulation,
+    selectIncident,
+    selectResource,
   } = useEmergencyState();
 
+  const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
+  const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
+  const [is3DView, setIs3DView] = useState<boolean>(false);
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 overflow-hidden text-slate-100 font-sans select-none">
-      {/* 1. Top Tactical Header Navigation */}
-      <TopNav isMockMode={isMockMode} onToggleMockMode={toggleMockMode} />
-
-      {/* 2. Main Geospatial Workstation Layout */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Side Panel: Active Incident Feeds */}
-        <aside className="w-80 border-r border-slate-800 flex flex-col bg-slate-900/60 backdrop-blur-md z-10 shrink-0 shadow-xl">
-          <IncidentDrawer incidents={worldState.activeIncidents} />
-        </aside>
-
-        {/* Center Canvas: Interactive Map Visualization & Demo Control Dock */}
-        <main className="flex-1 relative flex flex-col min-w-0">
-          <div className="flex-1 relative overflow-hidden">
-            <MapView
-              worldState={worldState}
-              isPaused={isPaused}
-              playbackSpeed={playbackSpeed}
-            />
-          </div>
-
-          {/* Bottom Dock: Presentation & Scenario Controls */}
-          <div className="shrink-0 z-20">
-            <DemoControls
-              activePhase={activePhase}
-              isPaused={isPaused}
-              playbackSpeed={playbackSpeed}
-              onTriggerPhase={triggerPhase}
-              onTogglePause={togglePause}
-              onSetPlaybackSpeed={setPlaybackSpeed}
-              onResetSimulation={resetSimulation}
-            />
-          </div>
-        </main>
-
-        {/* Right Side Panel: Multi-Agent Telemetry & Resource Fleet Drawer */}
-        <aside className="w-88 border-l border-slate-800 flex flex-col bg-slate-900/60 backdrop-blur-md z-10 shrink-0 shadow-xl">
-          <section className="h-1/2 border-b border-slate-800 overflow-hidden flex flex-col">
-            <AgentTelemetry logs={worldState.agentLogs} />
-          </section>
-          <section className="h-1/2 overflow-hidden flex flex-col">
-            <FleetDrawer
-              resources={worldState.resources}
-              hospitals={worldState.hospitals}
-            />
-          </section>
-        </aside>
+    <main className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans select-none">
+      {/* 1. Full-Screen 100vw x 100vh Mapbox Geospatial Canvas (z-0) */}
+      <div className="absolute inset-0 w-full h-full z-0">
+        <MapView
+          worldState={worldState}
+          isPaused={isPaused}
+          playbackSpeed={playbackSpeed}
+          showTrafficOverlay={showTrafficOverlay}
+          is3DView={is3DView}
+          onSelectIncident={(incident) => selectIncident(incident.id)}
+          onSelectResource={(resource) => selectResource(resource.id)}
+        />
       </div>
 
-      {/* 3. Human-in-the-Loop (HITL) Verification Modal */}
+      {/* 2. Tactical Telemetry Navigation Header (Floating Top z-30) */}
+      <TopNav
+        worldState={worldState}
+        isMockMode={isMockMode}
+        activeMapStyle={activeMapStyle}
+        showTrafficOverlay={showTrafficOverlay}
+        is3DView={is3DView}
+        onSelectMapStyle={setActiveMapStyle}
+        onToggleTrafficOverlay={() => setShowTrafficOverlay((prev) => !prev)}
+        onToggle3DView={() => setIs3DView((prev) => !prev)}
+        onToggleMockMode={toggleMockMode}
+        onResetState={resetSimulation}
+      />
+
+      {/* 3. Floating Left Incident Drawer (z-20) */}
+      <IncidentDrawer
+        incidents={worldState.activeIncidents}
+        hospitals={worldState.hospitals}
+        resources={worldState.resources}
+        routes={worldState.activeRoutes}
+        onSelectIncident={(incident) => selectIncident(incident.id)}
+      />
+
+      {/* 4. Floating Right Fleet Inventory Drawer (z-20) */}
+      <FleetDrawer
+        resources={worldState.resources}
+        hospitals={worldState.hospitals}
+        metrics={worldState.metrics}
+        onSelectResource={(resource) => selectResource(resource.id)}
+      />
+
+      {/* 5. Floating Bottom-Right Multi-Agent Telemetry Stream (z-20) */}
+      <AgentTelemetry
+        logs={worldState.agentLogs}
+        systemStatus={worldState.systemStatus}
+      />
+
+      {/* 6. Floating Bottom Presentation & Scenario Controls Dock (z-30) */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto select-none max-w-[98vw]">
+        <div className="rounded-2xl tactical-glass border border-slate-700/90 shadow-[0_10px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl overflow-hidden">
+          <DemoControls
+            activePhase={activePhase}
+            isPaused={isPaused}
+            playbackSpeed={playbackSpeed}
+            onTriggerPhase={triggerPhase}
+            onTogglePause={togglePause}
+            onSetPlaybackSpeed={setPlaybackSpeed}
+            onResetSimulation={resetSimulation}
+          />
+        </div>
+      </div>
+
+      {/* 7. Human-in-the-Loop (HITL) Verification Modal (z-50) */}
       {pendingApproval && (
         <ApprovalModal
           isOpen={true}
@@ -86,7 +110,7 @@ export const App: React.FC = () => {
           onReject={rejectReallocation}
         />
       )}
-    </div>
+    </main>
   );
 };
 
