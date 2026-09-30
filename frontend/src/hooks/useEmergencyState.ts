@@ -1,9 +1,10 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * Complete 7-Step Emergency Dispatch-to-Hospital Lifecycle & WebSocket Hooks
+ * Complete 7-Step Emergency Dispatch-to-Hospital Lifecycle & Socket.IO Real-Time Stream Hook
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import {
   WorldState,
   RouteGeometry,
@@ -23,8 +24,8 @@ import {
   INDIRANAGAR_TO_VICTORIA_HOSPITAL,
 } from '../data/mockBengaluruState';
 
-const DEFAULT_WS_URL =
-  (import.meta.env?.VITE_WS_URL as string | undefined) || 'ws://localhost:5000';
+const DEFAULT_SOCKET_URL =
+  (import.meta.env?.VITE_WS_URL as string | undefined) || 'http://localhost:5000';
 
 export interface UseEmergencyStateReturn {
   worldState: WorldState;
@@ -54,6 +55,7 @@ export interface UseEmergencyStateReturn {
   approveReallocation: () => void;
   rejectReallocation: () => void;
   resetState: () => void;
+  resetSimulation: () => void;
   toggleMockMode: () => void;
   selectIncident: (id: string | null) => void;
   selectResource: (id: string | null) => void;
@@ -73,8 +75,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1.0);
 
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const autoPilotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const togglePlayback = useCallback(() => {
@@ -178,7 +179,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     setCurrentLifecycleStep(2);
     const timestamp = getTimestamp();
 
-    // Specific Agent Log mandated by requirements:
     const gridlockLog: AgentLog = {
       id: `LOG-GRID-${Date.now()}`,
       timestamp,
@@ -319,10 +319,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 4: SPECIALIZED HOSPITAL MATCHING
-   * Command Agent matches incident type to the correct receiving specialized hospital:
-   * - Structural Fire (Indiranagar INC-01) -> Victoria Hospital Burn ICU [77.5739, 12.9634] (HOSP-01)
-   * - Medical Emergency (Koramangala INC-02) -> St. John's Medical College Hospital [77.6195, 12.9345] (HOSP-04)
-   * - Trauma Crash (MG Road INC-03) -> Bowring & Lady Curzon Hospital [77.6047, 12.9830] (HOSP-02)
+   * Command Agent matches incident type to the correct receiving specialized hospital
    */
   const step4SpecializedHospitalMatch = useCallback(() => {
     setCurrentLifecycleStep(4);
@@ -382,8 +379,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   /**
    * STEP 5: HOSPITAL EVACUATION (Leg 2 Transport)
    * Generates new Leg 2 route polyline (Incident -> Hospital in Deep Cobalt Blue #2563eb with legType: 'HOSPITAL_LEG')
-   * Vehicle status: EVACUATING_TO_HOSPITAL
-   * Marks Leg 1 route as subtle faded historic trail
    */
   const step5TransportPatient = useCallback(() => {
     setCurrentLifecycleStep(5);
@@ -467,8 +462,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 6: PATIENT DELIVERED & BED ALLOCATION (-1 Bed)
-   * Unit arrives at hospital gate; status updates to ADMITTED_AT_HOSPITAL;
-   * Target hospital available beds decrements in real-time (14 -> 13)
    */
   const step6PatientDelivered = useCallback(() => {
     setCurrentLifecycleStep(6);
@@ -484,7 +477,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
     setWorldState((prev) => ({
       ...prev,
-      // Decrement bed count on HOSP-01
       hospitals: prev.hospitals.map((h) => {
         if (h.id === 'HOSP-01') {
           return {
@@ -514,7 +506,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 7: UNIT TURNAROUND & RESET TO AVAILABLE / READY
-   * Unit completes sanitization and resets to AVAILABLE / IDLE at base
    */
   const step7UnitAvailable = useCallback(() => {
     setCurrentLifecycleStep(7);
@@ -591,8 +582,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   );
 
   /**
-   * Auto-Pilot Simulator: Automatically cycles through all 7 steps smoothly and deliberately
-   * Calibrated with slow, presentation-ready pacing so observers can clearly monitor vehicle movements and response corridors
+   * Auto-Pilot Simulator: Automatically cycles through all 7 steps smoothly
    */
   const toggleAutoPilot = useCallback(() => {
     setIsAutoPilot((prev) => !prev);
@@ -607,14 +597,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       return;
     }
 
-    // Step-specific baseline durations (in milliseconds) for controlled, cinematic pitch pacing:
-    // Step 1: 20.0s (Units FIRE-01, AMB-03, AMB-01 drive Leg 1 along road network in tactical corridors)
-    // Step 2: 20.0s (Severe red gridlock detected, AI calculates bypass, AMB-01 travels detour)
-    // Step 3: 6.5s (On-scene arrival, triage countdown timer, green beacon)
-    // Step 4: 6.5s (Command Agent AI matches Victoria Hospital Burn ICU, bed reservation locked)
-    // Step 5: 22.0s (AMB-03 transports patient along Medical Emerald evacuation corridor to Victoria Hospital)
-    // Step 6: 6.5s (Patient delivered at hospital gate, ICU bed count decrements in real-time)
-    // Step 7: 6.5s (Ambulance restocked & sanitized, resets to AVAILABLE)
     const getBaseStepDuration = (step: EmergencyLifecycleStep): number => {
       switch (step) {
         case 1:
@@ -679,9 +661,17 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * Human-In-The-Loop Approval
+   * Human-In-The-Loop Approval Action
    */
   const approveReallocation = useCallback(() => {
+    if (worldState.pendingApproval && !isMockMode && socketRef.current) {
+      socketRef.current.emit('approve_reallocation', {
+        incidentId: worldState.pendingApproval.incidentId,
+        resourceId: worldState.pendingApproval.resourceId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     setWorldState((prev) => {
       if (!prev.pendingApproval) return prev;
 
@@ -768,12 +758,18 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         },
       };
     });
-  }, []);
+  }, [worldState.pendingApproval, isMockMode]);
 
   /**
-   * Human-In-The-Loop Rejection
+   * Human-In-The-Loop Rejection Action
    */
   const rejectReallocation = useCallback(() => {
+    if (worldState.pendingApproval && !isMockMode && socketRef.current) {
+      socketRef.current.emit('reject_reallocation', {
+        incidentId: worldState.pendingApproval.incidentId,
+      });
+    }
+
     setWorldState((prev) => {
       if (!prev.pendingApproval) return prev;
 
@@ -835,7 +831,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         agentLogs: [...prev.agentLogs, rejectionLog],
       };
     });
-  }, []);
+  }, [worldState.pendingApproval, isMockMode]);
 
   /**
    * Reset Grid State
@@ -868,88 +864,78 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * Live WebSocket Listener
+   * Live Socket.IO Client Listener
    */
   useEffect(() => {
     if (isMockMode) {
       if (socketRef.current) {
-        socketRef.current.close();
+        socketRef.current.disconnect();
         socketRef.current = null;
       }
       setIsConnected(true);
       return;
     }
 
-    let isMounted = true;
+    const socket = io(DEFAULT_SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      withCredentials: true,
+    });
+    socketRef.current = socket;
 
-    const connectWebSocket = () => {
-      try {
-        const socket = new WebSocket(DEFAULT_WS_URL);
-        socketRef.current = socket;
+    socket.on('connect', () => {
+      setIsConnected(true);
+      setLastHeartbeat(getTimestamp());
+      console.log(`Connected to ResQAlloc Engine on ${DEFAULT_SOCKET_URL}`);
+    });
 
-        socket.onopen = () => {
-          if (!isMounted) return;
-          setIsConnected(true);
-          setLastHeartbeat(getTimestamp());
-        };
-
-        socket.onmessage = (event: MessageEvent<string>) => {
-          if (!isMounted) return;
-          try {
-            const payload = JSON.parse(event.data);
-            const stateData = payload?.data ?? payload;
-
-            if (
-              stateData &&
-              typeof stateData === 'object' &&
-              ('systemStatus' in stateData || 'activeIncidents' in stateData)
-            ) {
-              setWorldState(stateData as WorldState);
-              setLastHeartbeat(getTimestamp());
-            }
-          } catch {
-            // Malformed packet ignored
-          }
-        };
-
-        socket.onerror = () => {
-          if (!isMounted) return;
-          setIsConnected(false);
-        };
-
-        socket.onclose = () => {
-          if (!isMounted) return;
-          setIsConnected(false);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (isMounted && !isMockMode) {
-              connectWebSocket();
-            }
-          }, 5000);
-        };
-      } catch {
-        if (isMounted) {
-          setIsConnected(false);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (isMounted && !isMockMode) {
-              connectWebSocket();
-            }
-          }, 5000);
-        }
+    socket.on('state_update', (incomingSnapshot: WorldState | { data?: WorldState }) => {
+      const stateData = (incomingSnapshot && 'data' in incomingSnapshot && incomingSnapshot.data)
+        ? incomingSnapshot.data
+        : incomingSnapshot;
+      if (stateData && typeof stateData === 'object') {
+        setWorldState(stateData as WorldState);
+        setLastHeartbeat(getTimestamp());
       }
-    };
+    });
 
-    connectWebSocket();
+    socket.on('STATE_UPDATED', (incomingSnapshot: WorldState | { data?: WorldState }) => {
+      const stateData = (incomingSnapshot && 'data' in incomingSnapshot && incomingSnapshot.data)
+        ? incomingSnapshot.data
+        : incomingSnapshot;
+      if (stateData && typeof stateData === 'object') {
+        setWorldState(stateData as WorldState);
+        setLastHeartbeat(getTimestamp());
+      }
+    });
+
+    socket.on('approval_required', (payload: any) => {
+      if (payload) {
+        setWorldState((prev) => ({
+          ...prev,
+          pendingApproval: {
+            id: payload.id || `APP-${Date.now()}`,
+            incidentId: payload.incidentId || 'INC-03',
+            incidentTitle: payload.incidentTitle || 'Multi-Vehicle Collision on MG Road',
+            resourceId: payload.recommendedResourceId || payload.resourceId || 'AMB-01',
+            resourceName: payload.resourceName || 'Ambulance 01',
+            rationale: payload.justification || payload.rationale || 'Diverting unit saves 11.4 mins for critical Level 5 crash.',
+            severity: 5,
+            urgency: 'CRITICAL',
+            timestamp: getTimestamp(),
+          },
+        }));
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+      console.log('Disconnected from ResQAlloc Engine');
+    });
 
     return () => {
-      isMounted = false;
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
-      if (reconnectTimeoutRef.current !== null) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, [isMockMode]);
 
@@ -981,157 +967,9 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     approveReallocation,
     rejectReallocation,
     resetState,
+    resetSimulation: resetState,
     toggleMockMode,
     selectIncident,
     selectResource,
   };
 };
-
-/**
- * Standalone auxiliary hook for granular event-based socket feeds
- */
-export interface EmergencySocketData<TIncident = unknown, TResource = unknown, TAssignment = unknown, TLog = unknown> {
-  incidents: TIncident[];
-  resources: TResource[];
-  assignments: TAssignment[];
-  logs: TLog[];
-}
-
-export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAssignment = unknown, TLog = unknown>(
-  wsUrl: string = DEFAULT_WS_URL
-) {
-  const [data, setData] = useState<EmergencySocketData<TIncident, TResource, TAssignment, TLog>>({
-    incidents: [],
-    resources: [],
-    assignments: [],
-    logs: [],
-  });
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-    const httpUrl = wsUrl.replace(/^ws/, 'http');
-
-    // 1. Initial REST fetch for baseline state
-    fetch(`${httpUrl}/api/state`, { credentials: 'omit', signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP error status ${res.status}`);
-        return res.json();
-      })
-      .then((resBody) => {
-        if (!isMounted) return;
-        // Unpack backend response envelope { status: "ok", data: state }
-        const initialData = resBody?.data ?? resBody;
-        if (initialData) {
-          setData((prev) => ({
-            ...prev,
-            incidents: initialData.incidents ?? prev.incidents,
-            resources: initialData.resources ?? prev.resources,
-            assignments: initialData.assignments ?? prev.assignments,
-            logs: initialData.decisionLogs ?? initialData.logs ?? prev.logs,
-          }));
-        }
-      })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        console.error('Initial state fetch error:', err);
-      });
-
-    // 2. Resilient WebSocket connection loop
-    const connectSocket = () => {
-      try {
-        const socket = new WebSocket(wsUrl);
-        socketRef.current = socket;
-
-        socket.onopen = () => {
-          if (isMounted) setIsConnected(true);
-        };
-
-        socket.onclose = () => {
-          if (!isMounted) return;
-          setIsConnected(false);
-          reconnectTimeoutRef.current = setTimeout(connectSocket, 5000);
-        };
-
-        socket.onerror = (err) => {
-          console.error('WebSocket encountered an error:', err);
-          if (isMounted) setIsConnected(false);
-        };
-
-        socket.onmessage = (event: MessageEvent<string>) => {
-          if (!isMounted) return;
-          try {
-            const message = JSON.parse(event.data);
-            switch (message.event) {
-              case 'STATE_UPDATED': {
-                const updated = message.data;
-                setData((prev) => ({
-                  ...prev,
-                  incidents: updated.incidents ?? prev.incidents,
-                  resources: updated.resources ?? prev.resources,
-                  assignments: updated.assignments ?? prev.assignments,
-                  logs: updated.decisionLogs ?? updated.logs ?? prev.logs,
-                }));
-                break;
-              }
-              case 'DECISION_LOG_ADDED':
-              case 'EXPLANATION_EMITTED': {
-                setData((prev) => ({
-                  ...prev,
-                  logs: [message.data, ...(prev.logs || [])],
-                }));
-                break;
-              }
-              case 'DISRUPTION_TRIGGERED': {
-                const { resource, affectedIncident, disruptionLog } = message.data || {};
-                setData((prev) => ({
-                  ...prev,
-                  resources: prev.resources.map((r) =>
-                    typeof r === 'object' && r !== null && '_id' in r && (r as Record<string, unknown>)._id === resource?._id
-                      ? (resource as TResource)
-                      : r
-                  ),
-                  incidents: prev.incidents.map((i) =>
-                    typeof i === 'object' && i !== null && '_id' in i && (i as Record<string, unknown>)._id === affectedIncident?._id
-                      ? (affectedIncident as TIncident)
-                      : i
-                  ),
-                  logs: disruptionLog ? [disruptionLog, ...(prev.logs || [])] : prev.logs,
-                }));
-                break;
-              }
-            }
-          } catch (err) {
-            console.error('WS Parse error:', err);
-          }
-        };
-      } catch {
-        if (isMounted) {
-          setIsConnected(false);
-          reconnectTimeoutRef.current = setTimeout(connectSocket, 5000);
-        }
-      }
-    };
-
-    connectSocket();
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
-      if (reconnectTimeoutRef.current !== null) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-    };
-  }, [wsUrl]);
-
-  return { ...data, isConnected };
-}

@@ -3,7 +3,14 @@ import http from "http";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose, { Types } from "mongoose";
-import { WebSocketServer, WebSocket } from "ws";
+import {
+    ResourceModel,
+    IncidentModel,
+    AssignmentModel,
+    DecisionLogModel,
+} from "./models/models.js";
+import { socketService } from "./services/socketService.js";
+import { getFullState } from "./services/stateService.js";
 
 dotenv.config();
 
@@ -12,120 +19,34 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI =
     process.env.MONGO_URI || "mongodb://127.0.0.1:27017/resqalloc?directConnection=true";
 
-app.use(cors());
+// ==========================================
+// 1. CORS & Middleware Configuration
+// ==========================================
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        credentials: true,
+    })
+);
 app.use(express.json());
 
 // ==========================================
-// MongoDB Schemas & Models
+// 2. HTTP & Socket.IO Server Setup
 // ==========================================
-
-const ResourceSchema = new mongoose.Schema({
-    callsign: { type: String, required: true },
-    type: { type: String, required: true },
-    coordinates: { type: [Number], required: true },
-    status: {
-        type: String,
-        enum: ["IDLE", "AVAILABLE", "ASSIGNED", "OUT_OF_SERVICE", "REROUTED"],
-        default: "IDLE",
-    },
-    currentIncidentId: { type: String, default: null },
-});
-
-const IncidentSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String, default: "" },
-    locationName: { type: String, default: "" },
-    coordinates: { type: [Number], required: true },
-    severity: { type: Number, default: 1 },
-    urgency: { type: String, default: "MEDIUM" },
-    requiredResources: { type: [String], default: [] },
-    status: {
-        type: String,
-        enum: ["PENDING", "ASSIGNED", "RESOLVED", "CANCELLED"],
-        default: "PENDING",
-    },
-});
-
-const AssignmentSchema = new mongoose.Schema({
-    incidentId: { type: String, required: true },
-    resourceId: { type: String, required: true },
-    assignedBy: { type: String, required: true },
-    status: {
-        type: String,
-        enum: ["ACTIVE", "COMPLETED", "PREEMPTED", "CANCELLED"],
-        default: "ACTIVE",
-    },
-    createdAt: { type: Date, default: Date.now },
-});
-
-const DecisionLogSchema = new mongoose.Schema({
-    action: { type: String, required: true },
-    actor: { type: String, required: true },
-    details: { type: mongoose.Schema.Types.Mixed, default: {} },
-    reason: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now, index: true },
-});
-
-export const ResourceModel = mongoose.model("Resource", ResourceSchema);
-export const IncidentModel = mongoose.model("Incident", IncidentSchema);
-export const AssignmentModel = mongoose.model("Assignment", AssignmentSchema);
-export const DecisionLogModel = mongoose.model("DecisionLog", DecisionLogSchema);
-
-// ==========================================
-// WebSocket Infrastructure
-// ==========================================
-
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
 
-export const socketService = {
-    broadcast: (event: string, data: any) => {
-        const payload = JSON.stringify({ event, data });
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
-    },
-};
-
-wss.on("connection", async (ws: WebSocket) => {
-    try {
-        const state = await getFullState();
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ event: "STATE_UPDATED", data: state }));
-        }
-    } catch (err) {
-        console.error("Failed to send initial state to client:", err);
-    }
-});
-
-// Periodic heartbeat to clean broken TCP sockets
-const interval = setInterval(() => {
-    wss.clients.forEach((ws: any) => {
-        if (ws.isAlive === false) return ws.terminate();
-        ws.isAlive = false;
-        ws.ping();
-    });
-}, 30000);
-
-wss.on("close", () => clearInterval(interval));
-
-async function getFullState() {
-    const [resources, incidents, assignments, logs] = await Promise.all([
-        ResourceModel.find().lean(),
-        IncidentModel.find().lean(),
-        AssignmentModel.find().lean(),
-        DecisionLogModel.find().sort({ timestamp: -1 }).limit(50).lean(),
-    ]);
-    return { resources, incidents, assignments, logs };
-}
+// Initialize Socket.IO with state streaming & HITL approval listeners
+socketService.init(server);
 
 const safeBroadcastState = async () => {
     try {
-        const state = await getFullState();
-        socketService.broadcast("STATE_UPDATED", state);
-        return state;
+        return await socketService.broadcastState();
     } catch (err) {
         console.error("Error broadcasting updated state:", err);
         return null;
@@ -136,7 +57,7 @@ const formatError = (err: unknown): string =>
     err instanceof Error ? err.message : "Internal server error";
 
 // ==========================================
-// REST Endpoints
+// 3. REST API Endpoints
 // ==========================================
 
 // GET /api/state
@@ -494,7 +415,7 @@ app.post("/api/assignments/approve", async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// Initialization & Graceful Shutdown
+// 4. Initialization & Graceful Shutdown
 // ==========================================
 
 mongoose
@@ -502,7 +423,7 @@ mongoose
     .then(() => {
         console.log("Connected to MongoDB successfully");
         server.listen(PORT, () => {
-            console.log(`ResQAlloc WebSocket & HTTP server running on port ${PORT}`);
+            console.log(`ResQAlloc Socket.IO & HTTP server running on port ${PORT}`);
         });
     })
     .catch((err) => {
@@ -513,7 +434,7 @@ mongoose
 const shutdown = async (signal: string) => {
     console.log(`Received ${signal}. Closing server connections...`);
     server.close(async () => {
-        wss.close();
+        socketService.close();
         await mongoose.connection.close(false);
         console.log("Server shutdown complete.");
         process.exit(0);
