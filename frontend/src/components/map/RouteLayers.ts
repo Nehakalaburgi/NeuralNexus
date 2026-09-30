@@ -32,6 +32,8 @@ export function initRouteLayers(map: Map): void {
         '#38bdf8', // Neon Sky Blue
         'HOSPITAL_LEG',
         '#2563eb', // Deep Cobalt Blue
+        'DETOUR_LEG',
+        '#f59e0b', // Dynamic Amber Bypass
         'HISTORIC_LEG',
         'rgba(56, 189, 248, 0.3)',
         '#38bdf8',
