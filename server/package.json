@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "@neuralnexus/shared": "file:../shared",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
