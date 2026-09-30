@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Clock,
   Truck,
+  Ambulance,
   CheckCircle2,
   XCircle,
   BrainCircuit,
@@ -70,7 +71,11 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
           <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-400 border-b border-slate-800 pb-2">
               <div className="flex items-center gap-1.5 text-cyan-400">
-                <Truck className="w-4 h-4" />
+                {pendingApproval.resourceId.startsWith('AMB') ? (
+                  <Ambulance className="w-4 h-4" />
+                ) : (
+                  <Truck className="w-4 h-4" />
+                )}
                 <span>Diverting Unit: {pendingApproval.resourceName} ({pendingApproval.resourceId})</span>
               </div>
               <span className="text-amber-400">Time-Critical Re-Route</span>

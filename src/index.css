@@ -84,8 +84,20 @@
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
 }
 
+.glow-orange {
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.6);
+}
+
 .glow-emerald {
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.glow-rose {
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+}
+
+.glow-purple {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
 }
 
 .text-glow-cyan {
@@ -102,6 +114,14 @@
 
 .text-glow-emerald {
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+
+.text-glow-rose {
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 8px rgba(99, 102, 241, 0.7);
 }
 
 /* Tactical Radar and Pulse Keyframes */
@@ -213,6 +233,51 @@
   }
 }
 
+@keyframes marker-pulse-orange-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.9);
+    transform: scale(1);
+  }
+  60% {
+    box-shadow: 0 0 0 16px rgba(239, 68, 68, 0);
+    transform: scale(1.06);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    transform: scale(1);
+  }
+}
+
+@keyframes marker-pulse-rose {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.85);
+    transform: scale(1);
+  }
+  60% {
+    box-shadow: 0 0 0 14px rgba(244, 63, 94, 0);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+    transform: scale(1);
+  }
+}
+
+@keyframes marker-pulse-purple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.85);
+    transform: scale(1);
+  }
+  60% {
+    box-shadow: 0 0 0 14px rgba(99, 102, 241, 0);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    transform: scale(1);
+  }
+}
+
 /* Animation Helper Classes */
 .animate-radar-sweep {
   animation: radar-sweep 4s linear infinite;
@@ -226,6 +291,14 @@
   animation: marker-pulse-crimson 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.animate-pulse-orange-red {
+  animation: marker-pulse-orange-red 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-rose {
+  animation: marker-pulse-rose 1.7s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 .animate-pulse-amber {
   animation: marker-pulse-amber 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -236,6 +309,10 @@
 
 .animate-pulse-emerald {
   animation: marker-pulse-emerald 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-purple {
+  animation: marker-pulse-purple 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-dash-flow {

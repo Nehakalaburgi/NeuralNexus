@@ -5,7 +5,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { WorldState, RouteGeometry, AgentLog, SystemMode } from '../types/emergency';
-import { initialWorldState, disruptedWorldState } from '../data/mockBengaluruState';
+import {
+  initialWorldState,
+  disruptedWorldState,
+  trafficJamWorldState,
+  ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
+} from '../data/mockBengaluruState';
 
 const DEFAULT_WS_URL =
   (import.meta.env?.VITE_WS_URL as string | undefined) || 'ws://localhost:5000';
@@ -18,6 +23,7 @@ export interface UseEmergencyStateReturn {
   lastHeartbeat: string | null;
   selectedIncidentId: string | null;
   selectedResourceId: string | null;
+  injectTrafficJam: () => void;
   injectDisruption: () => void;
   approveReallocation: () => void;
   rejectReallocation: () => void;
@@ -44,7 +50,19 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
 
   /**
-   * Action 1: Inject Disruption
+   * Action 1A: Inject Traffic Gridlock & Dynamic Bypass Reroute Scenario
+   * Simulates arterial bottleneck on Hosur Rd causing AMB-01 to dynamically detour via Victoria Layout & Adugodi
+   */
+  const injectTrafficJam = useCallback(() => {
+    setWorldState(trafficJamWorldState);
+    setSelectedIncidentId('INC-02');
+    setSelectedResourceId('AMB-01');
+    setLastHeartbeat(getTimestamp());
+  }, []);
+
+  /**
+   * Action 1B: Inject Multi-Unit Disruption (Phase 2)
+   * Transitions system to Disrupted State (AMB-02 breakdown + Sev-5 Crash at MG Road + Reallocation Proposal)
    */
   const injectDisruption = useCallback(() => {
     setWorldState(disruptedWorldState);
@@ -70,15 +88,12 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             id: 'ROUTE-03-COMMITTED',
             resourceId: approval.resourceId,
             incidentId: approval.incidentId,
-            coordinates: [
-              [77.612, 12.944],
-              [77.6145, 12.952],
-              [77.617, 12.96],
-              [77.618, 12.968],
-              [77.6186, 12.9738],
-            ],
+            hospitalId: 'HOSP-02',
+            type: 'DISPATCH',
+            coordinates: ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
             isPendingApproval: false,
-            color: '#06b6d4',
+            color: '#2563eb',
+            label: 'AMB-01 Committed Diversion Vector',
           },
         ]);
 
@@ -103,6 +118,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             ...inc,
             status: 'ASSIGNED' as const,
             assignedResourceId: approval.resourceId,
+            assignedResourceIds: [approval.resourceId],
           };
         }
         if (inc.id === approval.previousIncidentId) {
@@ -110,6 +126,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             ...inc,
             status: 'PENDING' as const,
             assignedResourceId: undefined,
+            assignedResourceIds: undefined,
           };
         }
         return inc;
@@ -166,7 +183,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             return {
               ...r,
               id: 'ROUTE-02',
-              color: '#06b6d4',
+              color: '#2563eb',
             };
           }
           return r;
@@ -343,6 +360,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     lastHeartbeat,
     selectedIncidentId,
     selectedResourceId,
+    injectTrafficJam,
     injectDisruption,
     approveReallocation,
     rejectReallocation,

@@ -4,7 +4,7 @@
  * Fully typed, strictly conformant, zero placeholders.
  */
 
-import { Hospital, Incident, Resource, RouteGeometry, AgentLog, WorldState, Coordinates } from '../types/emergency';
+import { Hospital, Incident, Resource, RouteGeometry, AgentLog, WorldState } from '../types/emergency';
 
 /**
  * 4 Major Bengaluru Medical & Trauma Centers
@@ -63,37 +63,32 @@ export const BENGALURU_HOSPITALS: Hospital[] = [
 
 /**
  * Geographic Polylines for Realistic Metro Routes in Bengaluru
- * Coordinate sequences follow actual road corridors [lng, lat]
+ * High-Precision True Road-Snapped Coordinates (Mapbox Driving Directions API)
+ * Every point is physically aligned to actual streets, curves, and turns in Bengaluru.
  */
-export const ROUTE_COORDS_FIRE_01: Coordinates[] = [
-  [77.6250, 12.9740], // Halasuru Fire Station staging
-  [77.6295, 12.9752], // Old Madras Rd
-  [77.6350, 12.9765], // CMH Road junction
-  [77.6385, 12.9772], // 100ft Rd approach
-  [77.6413, 12.9784], // Indiranagar 100ft Rd scene
-];
+export {
+  ROUTE_COORDS_FIRE_01,
+  ROUTE_COORDS_AMB_03_FIRE,
+  ROUTE_COORDS_AMB_01_INITIAL,
+  ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
+  ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
+  ROUTE_COORDS_AMB_02_PATROL,
+  ROUTE_COORDS_EVAC_INC_01,
+  ROUTE_COORDS_EVAC_INC_02,
+  ROUTE_COORDS_EVAC_INC_03,
+} from './roadRoutes';
 
-export const ROUTE_COORDS_AMB_01_INITIAL: Coordinates[] = [
-  [77.6050, 12.9550], // Richmond Town staging
-  [77.6080, 12.9490], // Hosur Road flyover
-  [77.6120, 12.9440], // Dairy Circle junction
-  [77.6160, 12.9390], // Koramangala 80ft Rd
-  [77.6200, 12.9352], // Koramangala 5th Block scene
-];
-
-export const ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD: Coordinates[] = [
-  [77.6120, 12.9440], // Current position at Dairy Circle
-  [77.6145, 12.9520], // Victoria Layout corridor
-  [77.6170, 12.9600], // Richmond Road connector
-  [77.6180, 12.9680], // Commissariat Road
-  [77.6186, 12.9738], // MG Road / Trinity Circle underpass
-];
-
-export const ROUTE_COORDS_AMB_02_STANDBY: Coordinates[] = [
-  [77.6000, 12.9760], // Cubbon Park perimeter
-  [77.6060, 12.9755], // General Post Office junction
-  [77.6120, 12.9750], // MG Road Brigade Rd junction
-];
+import {
+  ROUTE_COORDS_FIRE_01,
+  ROUTE_COORDS_AMB_03_FIRE,
+  ROUTE_COORDS_AMB_01_INITIAL,
+  ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
+  ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
+  ROUTE_COORDS_AMB_02_PATROL,
+  ROUTE_COORDS_EVAC_INC_01,
+  ROUTE_COORDS_EVAC_INC_02,
+  ROUTE_COORDS_EVAC_INC_03,
+} from './roadRoutes';
 
 /**
  * Baseline Incidents (Phase 1 / Normal Ingestion)
@@ -109,11 +104,12 @@ export const INITIAL_INCIDENTS: Incident[] = [
       address: '100ft Rd, Indiranagar, Bengaluru',
     },
     status: 'ASSIGNED',
-    requiredResources: ['FIRE_TRUCK', 'RESCUE_TEAM'],
-    assignedResourceId: 'FIRE-01',
+    requiredResources: ['FIRE_TRUCK', 'AMBULANCE'],
+    assignedResourceId: 'FIRE-01, AMB-03',
+    assignedResourceIds: ['FIRE-01', 'AMB-03'],
     targetHospitalId: 'HOSP-03',
     reportedAt: '16:18:22 IST',
-    description: 'Active electrical blaze on 2nd floor retail complex. Heavy black smoke, roof venting underway, evacuation in progress.',
+    description: 'Active electrical blaze on 2nd floor retail complex with heavy smoke entrapment. Dual response active: Fire containment + burn trauma standby.',
   },
   {
     id: 'INC-02',
@@ -127,6 +123,7 @@ export const INITIAL_INCIDENTS: Incident[] = [
     status: 'ASSIGNED',
     requiredResources: ['AMBULANCE'],
     assignedResourceId: 'AMB-01',
+    assignedResourceIds: ['AMB-01'],
     targetHospitalId: 'HOSP-04',
     reportedAt: '16:24:10 IST',
     description: '68yo male experiencing crushing chest pain and shortness of breath. Patient conscious, vitals stable, ALS oxygen unit requested.',
@@ -135,47 +132,67 @@ export const INITIAL_INCIDENTS: Incident[] = [
 
 /**
  * Baseline Fleet Units (Phase 1 / Normal Ingestion)
+ * All emergency response units actively dispatched with 60fps telemetry and visible blue routes
  */
 export const INITIAL_RESOURCES: Resource[] = [
-  {
-    id: 'AMB-01',
-    name: 'ALS Unit Bravo-1',
-    type: 'AMBULANCE',
-    status: 'DISPATCHED',
-    location: {
-      lat: 12.9440,
-      lng: 77.6120,
-    },
-    baseHospitalId: 'HOSP-04',
-    currentEtaMinutes: 4,
-    assignedIncidentId: 'INC-02',
-    heading: 145,
-  },
   {
     id: 'FIRE-01',
     name: 'Heavy Tender T-04',
     type: 'FIRE_TRUCK',
     status: 'DISPATCHED',
     location: {
-      lat: 12.9765,
-      lng: 77.6350,
+      lat: 12.9740,
+      lng: 77.6250,
     },
     baseHospitalId: 'HOSP-03',
     currentEtaMinutes: 6,
+    distanceRemainingKm: 2.8,
     assignedIncidentId: 'INC-01',
     heading: 75,
+  },
+  {
+    id: 'AMB-03',
+    name: 'Trauma Medic Unit Echo-3',
+    type: 'AMBULANCE',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.9584,
+      lng: 77.6517,
+    },
+    baseHospitalId: 'HOSP-03',
+    currentEtaMinutes: 4,
+    distanceRemainingKm: 1.9,
+    assignedIncidentId: 'INC-01',
+    heading: 330,
+  },
+  {
+    id: 'AMB-01',
+    name: 'ALS Unit Bravo-1',
+    type: 'AMBULANCE',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.9550,
+      lng: 77.6050,
+    },
+    baseHospitalId: 'HOSP-04',
+    currentEtaMinutes: 4,
+    distanceRemainingKm: 2.1,
+    assignedIncidentId: 'INC-02',
+    heading: 145,
   },
   {
     id: 'AMB-02',
     name: 'BLS Unit Delta-2',
     type: 'AMBULANCE',
-    status: 'IDLE',
+    status: 'DISPATCHED',
     location: {
-      lat: 12.9750,
-      lng: 77.6120,
+      lat: 12.9760,
+      lng: 77.6000,
     },
     baseHospitalId: 'HOSP-02',
-    currentEtaMinutes: 2,
+    currentEtaMinutes: 3,
+    distanceRemainingKm: 1.4,
+    assignedIncidentId: 'INC-03-STANDBY',
     heading: 270,
   },
   {
@@ -193,24 +210,78 @@ export const INITIAL_RESOURCES: Resource[] = [
 ];
 
 /**
- * Baseline Active Routes
+ * Baseline Active Routes (Vehicle Dispatches in Solid Blue + Hospital Evacuation Corridors)
  */
 export const INITIAL_ROUTES: RouteGeometry[] = [
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Active Vehicle Path: Blue)
   {
-    id: 'ROUTE-01',
+    id: 'ROUTE-01-FIRE',
     resourceId: 'FIRE-01',
     incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
     coordinates: ROUTE_COORDS_FIRE_01,
     isPendingApproval: false,
-    color: '#06b6d4',
+    color: '#2563eb', // Vibrant Sapphire Blue
+    label: 'FIRE-01 Active Vehicle Path',
   },
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-01-AMB',
+    resourceId: 'AMB-03',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_AMB_03_FIRE,
+    isPendingApproval: false,
+    color: '#2563eb', // Vibrant Sapphire Blue
+    label: 'AMB-03 Active Ambulance Route',
+  },
+  // 3. AMB-01 -> Koramangala Cardiac INC-02 (Active Ambulance Route: Blue)
   {
     id: 'ROUTE-02',
     resourceId: 'AMB-01',
     incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'DISPATCH',
     coordinates: ROUTE_COORDS_AMB_01_INITIAL,
     isPendingApproval: false,
-    color: '#06b6d4',
+    color: '#2563eb', // Vibrant Sapphire Blue
+    label: 'AMB-01 Active Ambulance Route',
+  },
+  // 4. AMB-02 -> Central Corridor Standby Dispatch (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-02-DELTA',
+    resourceId: 'AMB-02',
+    incidentId: 'INC-03-STANDBY',
+    hospitalId: 'HOSP-02',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_AMB_02_PATROL,
+    isPendingApproval: false,
+    color: '#2563eb', // Vibrant Sapphire Blue
+    label: 'AMB-02 Active Ambulance Route',
+  },
+  // 5. Evacuation Corridor: INC-01 Indiranagar -> HOSP-03 Manipal Hospital
+  {
+    id: 'ROUTE-EVAC-INC-01',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_01,
+    isPendingApproval: false,
+    color: '#0891b2', // Distinct medical evacuation corridor
+    label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
+  },
+  // 6. Evacuation Corridor: INC-02 Koramangala -> HOSP-04 St. John's Hospital
+  {
+    id: 'ROUTE-EVAC-INC-02',
+    incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_02,
+    isPendingApproval: false,
+    color: '#0891b2', // Distinct medical evacuation corridor
+    label: 'INC-02 -> St. Johns Medical Evacuation Corridor',
   },
 ];
 
@@ -222,21 +293,21 @@ export const INITIAL_AGENT_LOGS: AgentLog[] = [
     id: 'LOG-001',
     timestamp: '16:18:25 IST',
     agentName: 'TRIAGE',
-    message: 'Ingested emergency call #INC-01 (100ft Rd Indiranagar). NLP parsed high-temperature structural fire. Severity classified: 4.',
+    message: '[TRIAGE] Indiranagar Structural Fire escalated: requires dual response (1x Fire Engine for containment, 1x ALS Ambulance for burn/smoke trauma standby).',
     severity: 'WARN',
   },
   {
     id: 'LOG-002',
     timestamp: '16:18:30 IST',
     agentName: 'LOGISTICS',
-    message: 'Calculated travel isochrone from Halasuru station. Traffic friction on CMH Rd: moderate (+1.8m delay).',
+    message: 'Calculated multi-corridor travel isochrones: FIRE-01 via CMH Rd (ETA 6m), ALS AMB-03 via 100ft South Rd (ETA 4m). Designated Level-1 Trauma Hub: Manipal Hospital (22 beds).',
     severity: 'INFO',
   },
   {
     id: 'LOG-003',
     timestamp: '16:18:35 IST',
     agentName: 'ALLOCATION',
-    message: 'Optimal dispatch match: Heavy Tender FIRE-01 locked to INC-01. ETA 6 min. Route vector broadcast to MDT.',
+    message: 'Dual dispatch locked to INC-01: Heavy Tender FIRE-01 + ALS Unit AMB-03. Converging route vectors & Manipal Hospital evacuation corridor synchronized.',
     severity: 'INFO',
   },
   {
@@ -250,14 +321,14 @@ export const INITIAL_AGENT_LOGS: AgentLog[] = [
     id: 'LOG-005',
     timestamp: '16:24:22 IST',
     agentName: 'ALLOCATION',
-    message: 'Dispatched ALS Unit AMB-01 from Richmond staging to INC-02. ETA 4 min. Base hospital St. Johns alerted.',
+    message: 'Dispatched ALS Unit AMB-01 from Richmond staging to INC-02. ETA 4 min. Base hospital St. Johns (18 beds) established as receiving trauma corridor.',
     severity: 'INFO',
   },
   {
     id: 'LOG-006',
     timestamp: '16:26:00 IST',
     agentName: 'COMMAND',
-    message: 'Grid operating at optimal throughput. Active incidents: 2. Average emergency response latency: 5.2 min.',
+    message: 'Grid operating at optimal throughput. Active incidents: 2. Dispatched units: 3. Hospital evacuation corridors online.',
     severity: 'INFO',
   },
 ];
@@ -276,8 +347,8 @@ export const initialWorldState: WorldState = {
   metrics: {
     activeIncidents: 2,
     availableResources: 2,
-    totalFleet: 4,
-    avgResponseTimeMin: 5.2,
+    totalFleet: 5,
+    avgResponseTimeMin: 4.8,
   },
 };
 
@@ -304,9 +375,39 @@ export const DISRUPTED_INCIDENTS: Incident[] = [
 ];
 
 /**
- * Disrupted Fleet Units (AMB-02 broken down, AMB-01 rerouted)
+ * Disrupted Fleet Units (AMB-02 broken down, AMB-01 proposed for reroute, FIRE-01 & AMB-03 on scene at INC-01)
  */
 export const DISRUPTED_RESOURCES: Resource[] = [
+  {
+    id: 'FIRE-01',
+    name: 'Heavy Tender T-04',
+    type: 'FIRE_TRUCK',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.97417,
+      lng: 77.624945,
+    },
+    baseHospitalId: 'HOSP-03',
+    currentEtaMinutes: 4,
+    distanceRemainingKm: 1.8,
+    assignedIncidentId: 'INC-01',
+    heading: 75,
+  },
+  {
+    id: 'AMB-03',
+    name: 'Trauma Medic Unit Echo-3',
+    type: 'AMBULANCE',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.9584,
+      lng: 77.6517,
+    },
+    baseHospitalId: 'HOSP-03',
+    currentEtaMinutes: 2,
+    distanceRemainingKm: 0.9,
+    assignedIncidentId: 'INC-01',
+    heading: 330,
+  },
   {
     id: 'AMB-01',
     name: 'ALS Unit Bravo-1',
@@ -318,22 +419,9 @@ export const DISRUPTED_RESOURCES: Resource[] = [
     },
     baseHospitalId: 'HOSP-04',
     currentEtaMinutes: 3,
+    distanceRemainingKm: 1.6,
     assignedIncidentId: 'INC-03',
     heading: 355,
-  },
-  {
-    id: 'FIRE-01',
-    name: 'Heavy Tender T-04',
-    type: 'FIRE_TRUCK',
-    status: 'DISPATCHED',
-    location: {
-      lat: 12.9765,
-      lng: 77.6350,
-    },
-    baseHospitalId: 'HOSP-03',
-    currentEtaMinutes: 4,
-    assignedIncidentId: 'INC-01',
-    heading: 75,
   },
   {
     id: 'AMB-02',
@@ -341,11 +429,12 @@ export const DISRUPTED_RESOURCES: Resource[] = [
     type: 'AMBULANCE',
     status: 'UNAVAILABLE',
     location: {
-      lat: 12.9750,
-      lng: 77.6120,
+      lat: 12.9760,
+      lng: 77.6000,
     },
     baseHospitalId: 'HOSP-02',
     currentEtaMinutes: undefined,
+    distanceRemainingKm: undefined,
     heading: 270,
   },
   {
@@ -363,32 +452,89 @@ export const DISRUPTED_RESOURCES: Resource[] = [
 ];
 
 /**
- * Disrupted Routes (Including Pending Reallocation Route)
+ * Disrupted Routes (Including Pending Reallocation Route in Blue + Evacuation Corridors)
  */
 export const DISRUPTED_ROUTES: RouteGeometry[] = [
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Active Vehicle Path: Blue)
   {
-    id: 'ROUTE-01',
+    id: 'ROUTE-01-FIRE',
     resourceId: 'FIRE-01',
     incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
     coordinates: ROUTE_COORDS_FIRE_01,
     isPendingApproval: false,
-    color: '#06b6d4',
+    color: '#2563eb', // Blue vehicle path
+    label: 'FIRE-01 Active Vehicle Path (Blue)',
   },
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-01-AMB',
+    resourceId: 'AMB-03',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_AMB_03_FIRE,
+    isPendingApproval: false,
+    color: '#2563eb', // Blue vehicle path
+    label: 'AMB-03 Active Ambulance Route (Blue)',
+  },
+  // 3. Evacuation Corridor: INC-01 -> HOSP-03 Manipal Hospital
+  {
+    id: 'ROUTE-EVAC-INC-01',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_01,
+    isPendingApproval: false,
+    color: '#0891b2', // Medical corridor
+    label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
+  },
+  // 4. Preempted route for AMB-01 to INC-02 (dimmed)
   {
     id: 'ROUTE-02-ORIGINAL',
     resourceId: 'AMB-01',
     incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'DISPATCH',
     coordinates: ROUTE_COORDS_AMB_01_INITIAL,
     isPendingApproval: false,
     color: '#475569', // Dimmed original route
+    label: 'AMB-01 Preempted Vector',
   },
+  // 5. Evacuation Corridor: INC-02 -> HOSP-04 St. John's
+  {
+    id: 'ROUTE-EVAC-INC-02',
+    incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_02,
+    isPendingApproval: false,
+    color: '#0891b2',
+    label: 'INC-02 -> St. Johns Evacuation Corridor',
+  },
+  // 6. Proposed Reallocation Route: AMB-01 -> MG Road Crash INC-03 (Active Ambulance Route: Blue)
   {
     id: 'ROUTE-03-PENDING',
     resourceId: 'AMB-01',
     incidentId: 'INC-03',
+    hospitalId: 'HOSP-02',
+    type: 'REROUTE',
     coordinates: ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
     isPendingApproval: true,
-    color: '#f59e0b', // Flashing amber proposed reallocation vector
+    color: '#2563eb', // Solid vivid Blue route vector
+    label: 'AMB-01 Proposed Diversion Route (Blue)',
+  },
+  // 7. Evacuation Corridor: INC-03 MG Road -> HOSP-02 Bowring Hospital
+  {
+    id: 'ROUTE-EVAC-INC-03',
+    incidentId: 'INC-03',
+    hospitalId: 'HOSP-02',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_03,
+    isPendingApproval: false,
+    color: '#0891b2',
+    label: 'INC-03 -> Bowring Trauma Evacuation Corridor',
   },
 ];
 
@@ -453,14 +599,234 @@ export const disruptedWorldState: WorldState = {
     resourceName: 'ALS Unit Bravo-1',
     previousIncidentId: 'INC-02',
     previousIncidentTitle: 'Acute Cardiac Distress (Koramangala 5th Block)',
-    rationale: 'CRITICAL PREEMPTION: Severity 5 mass-casualty trauma at MG Road with active airway compromise outweighs stable Severity 2 cardiac patient. AMB-01 is 3.2 mins from Trinity Circle. Standby BLS queue re-ordered for Koramangala. Diverting AMB-01 reduces Level-5 emergency response time from 14.8m to 3.2m (saving 11.6 min Golden Hour window).',
+    rationale: 'CRITICAL PREEMPTION: Severity 5 mass-casualty trauma at MG Road with active airway compromise outweighs stable Severity 2 cardiac patient. AMB-01 is 3.2 mins from Trinity Circle. Standby BLS queue re-ordered for Koramangala. Diverting AMB-01 reduces Level-5 emergency response time from 14.8m to 3.2m (saving 11.6 min Golden Hour window). Dual dispatch for Indiranagar Fire remains active (FIRE-01 + AMB-03).',
     urgency: 'CRITICAL',
     timestamp: '16:31:30 IST',
   },
   metrics: {
     activeIncidents: 3,
     availableResources: 1,
-    totalFleet: 4,
-    avgResponseTimeMin: 7.8,
+    totalFleet: 5,
+    avgResponseTimeMin: 6.8,
+  },
+};
+
+/**
+ * Traffic Jam Scenario: Active Fleet Resources
+ * AMB-01 is actively rerouted along the dynamic Victoria Layout bypass detour to beat Hosur Road gridlock
+ */
+export const TRAFFIC_JAM_RESOURCES: Resource[] = [
+  {
+    id: 'FIRE-01',
+    name: 'Heavy Tender T-04',
+    type: 'FIRE_TRUCK',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.97417,
+      lng: 77.624945,
+    },
+    baseHospitalId: 'HOSP-03',
+    currentEtaMinutes: 6,
+    distanceRemainingKm: 2.8,
+    assignedIncidentId: 'INC-01',
+    heading: 75,
+  },
+  {
+    id: 'AMB-03',
+    name: 'Trauma Medic Unit Echo-3',
+    type: 'AMBULANCE',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.9584,
+      lng: 77.6517,
+    },
+    baseHospitalId: 'HOSP-03',
+    currentEtaMinutes: 4,
+    distanceRemainingKm: 1.9,
+    assignedIncidentId: 'INC-01',
+    heading: 330,
+  },
+  {
+    id: 'AMB-01',
+    name: 'ALS Unit Bravo-1',
+    type: 'AMBULANCE',
+    status: 'REROUTED',
+    location: {
+      lat: 12.9550,
+      lng: 77.6050,
+    },
+    baseHospitalId: 'HOSP-04',
+    currentEtaMinutes: 5,
+    distanceRemainingKm: 2.6,
+    assignedIncidentId: 'INC-02',
+    heading: 135,
+    trafficStatus: 'REROUTED_BYPASS',
+    trafficSavingsMinutes: 8.8,
+  },
+  {
+    id: 'AMB-02',
+    name: 'BLS Unit Delta-2',
+    type: 'AMBULANCE',
+    status: 'DISPATCHED',
+    location: {
+      lat: 12.9760,
+      lng: 77.6000,
+    },
+    baseHospitalId: 'HOSP-02',
+    currentEtaMinutes: 3,
+    distanceRemainingKm: 1.4,
+    assignedIncidentId: 'INC-03-STANDBY',
+    heading: 270,
+  },
+  {
+    id: 'RESCUE-01',
+    name: 'Disaster Response Squad R-1',
+    type: 'RESCUE_TEAM',
+    status: 'IDLE',
+    location: {
+      lat: 12.9634,
+      lng: 77.5739,
+    },
+    baseHospitalId: 'HOSP-01',
+    heading: 0,
+  },
+];
+
+/**
+ * Traffic Jam Scenario: Active Routes
+ * Includes red flashing congested original segment + high-visibility blue dynamic detour vector
+ */
+export const TRAFFIC_JAM_ROUTES: RouteGeometry[] = [
+  // 1. FIRE-01 -> Indiranagar Fire INC-01 (Active Vehicle Path: Blue)
+  {
+    id: 'ROUTE-01-FIRE',
+    resourceId: 'FIRE-01',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_FIRE_01,
+    isPendingApproval: false,
+    color: '#2563eb', // Blue vehicle path
+    label: 'FIRE-01 Active Vehicle Path (Blue)',
+  },
+  // 2. AMB-03 -> Indiranagar Fire INC-01 (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-01-AMB',
+    resourceId: 'AMB-03',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_AMB_03_FIRE,
+    isPendingApproval: false,
+    color: '#2563eb', // Blue vehicle path
+    label: 'AMB-03 Active Ambulance Route (Blue)',
+  },
+  // 3. Evacuation Corridor: INC-01 Indiranagar -> HOSP-03 Manipal Hospital
+  {
+    id: 'ROUTE-EVAC-INC-01',
+    incidentId: 'INC-01',
+    hospitalId: 'HOSP-03',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_01,
+    isPendingApproval: false,
+    color: '#0891b2',
+    label: 'INC-01 -> Manipal Trauma Evacuation Corridor',
+  },
+  // 4. Congested Original Route: Hosur Road Gridlock (Flashing Red Warning where Traffic is Present)
+  {
+    id: 'ROUTE-02-CONGESTED',
+    resourceId: 'AMB-01',
+    incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'CONGESTED_ORIGINAL',
+    coordinates: ROUTE_COORDS_AMB_01_INITIAL,
+    isPendingApproval: false,
+    isCongested: true,
+    trafficWarning: 'TRAFFIC BOTTLENECK: Dairy Circle Gridlock (+10m delay)',
+    color: '#ef4444', // Glowing Red where traffic is present
+    label: 'Hosur Rd Traffic Bottleneck (Red)',
+  },
+  // 5. Dynamic AI Detour Bypass Route: AMB-01 via Victoria Layout & Adugodi (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-02-DETOUR',
+    resourceId: 'AMB-01',
+    incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'DETOUR',
+    coordinates: ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
+    isPendingApproval: false,
+    color: '#2563eb', // Vivid Blue vehicle path
+    label: 'AMB-01 Active Bypass Route (Blue -8.8m saved)',
+  },
+  // 6. AMB-02 -> Central Corridor Standby Dispatch (Active Ambulance Route: Blue)
+  {
+    id: 'ROUTE-02-DELTA',
+    resourceId: 'AMB-02',
+    incidentId: 'INC-03-STANDBY',
+    hospitalId: 'HOSP-02',
+    type: 'DISPATCH',
+    coordinates: ROUTE_COORDS_AMB_02_PATROL,
+    isPendingApproval: false,
+    color: '#2563eb', // Vibrant Sapphire Blue
+    label: 'AMB-02 Active Ambulance Route (Blue)',
+  },
+  // 7. Evacuation Corridor: INC-02 Koramangala -> HOSP-04 St. John's Hospital
+  {
+    id: 'ROUTE-EVAC-INC-02',
+    incidentId: 'INC-02',
+    hospitalId: 'HOSP-04',
+    type: 'EVACUATION',
+    coordinates: ROUTE_COORDS_EVAC_INC_02,
+    isPendingApproval: false,
+    color: '#0891b2',
+    label: 'INC-02 -> St. Johns Evacuation Corridor',
+  },
+];
+
+/**
+ * Traffic Jam Scenario: Multi-Agent Reasoning Telemetry Logs
+ */
+export const TRAFFIC_JAM_AGENT_LOGS: AgentLog[] = [
+  ...INITIAL_AGENT_LOGS,
+  {
+    id: 'LOG-TRF-001',
+    timestamp: '16:27:10 IST',
+    agentName: 'LOGISTICS',
+    message: 'TRAFFIC INTERCEPT: Severe arterial gridlock detected on Hosur Rd / Dairy Circle corridor (+10 min transit delay, speed < 8 km/h). ETA spiked from 4.0m to 14.0m.',
+    severity: 'CRITICAL',
+  },
+  {
+    id: 'LOG-TRF-002',
+    timestamp: '16:27:18 IST',
+    agentName: 'COMMAND',
+    message: 'AUTONOMOUS REROUTING: Diverting ALS Unit AMB-01 via Victoria Layout & Adugodi arterial bypass. Projected ETA reduced to 5.2 mins (saved 8.8 min delay).',
+    severity: 'WARN',
+  },
+  {
+    id: 'LOG-TRF-003',
+    timestamp: '16:27:25 IST',
+    agentName: 'ALLOCATION',
+    message: 'Dynamic Traffic Bypass Vector locked on map canvas. Koramangala Cardiac call #INC-02 response time secured within Golden Hour parameters.',
+    severity: 'INFO',
+  },
+];
+
+/**
+ * Complete Traffic Jam & Dynamic Detour World State Snapshot
+ */
+export const trafficJamWorldState: WorldState = {
+  systemStatus: 'REASSESSING',
+  activeIncidents: INITIAL_INCIDENTS,
+  resources: TRAFFIC_JAM_RESOURCES,
+  hospitals: BENGALURU_HOSPITALS,
+  activeRoutes: TRAFFIC_JAM_ROUTES,
+  agentLogs: TRAFFIC_JAM_AGENT_LOGS,
+  pendingApproval: null,
+  isTrafficCongested: true,
+  metrics: {
+    activeIncidents: 2,
+    availableResources: 2,
+    totalFleet: 5,
+    avgResponseTimeMin: 5.2,
   },
 };
