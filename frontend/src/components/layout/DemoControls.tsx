@@ -228,14 +228,14 @@ export const DemoControls: React.FC<DemoControlsProps> = ({
           {hasPendingApproval && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />}
         </button>
 
-        {/* Reset Grid */}
+        {/* Reset Simulation Button */}
         <button
           onClick={onReset}
-          title="Reset simulation to Step 1 baseline"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10.5px] font-mono font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer"
+          title="Reset simulation to default vehicle depots, active incident pins, and baseline bed capacities"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-cyan-500 shadow-md transition-all duration-200 cursor-pointer"
         >
-          <RotateCcw className="w-3 h-3" />
-          <span className="hidden md:inline">Reset</span>
+          <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+          <span>🔄 Reset Simulation</span>
         </button>
       </div>
     </div>

@@ -343,8 +343,6 @@ export function createResourceMarkerElement(
     `;
   }
 
-  const targetHospName = resource.targetHospitalName ?? 'Victoria Hospital';
-
   container.innerHTML = `
     <!-- Concentric Active Beacon Ring -->
     ${beaconRingHtml}
@@ -365,11 +363,11 @@ export function createResourceMarkerElement(
     }">
       ${
         resource.status === 'REROUTED'
-          ? 'AI RECALCULATING: CHOKEPOINT AHEAD'
+          ? '⚠️ Traffic Gridlock Detected (+11 min delay)'
           : isOnScene
-          ? '[ON SCENE: STABILIZING PATIENT]'
+          ? '[ON SCENE: STABILIZING PATIENT (4s)]'
           : isEvacuating
-          ? `🚑 EVACUATING PATIENT -> ${targetHospName} (ETA: ${resource.currentEtaMinutes ?? 4.8} min)`
+          ? '[EVACUATING -> HOSPITAL]'
           : isDelivered
           ? '[AVAILABLE / READY]'
           : isResolved

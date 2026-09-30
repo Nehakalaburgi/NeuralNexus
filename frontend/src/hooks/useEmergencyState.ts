@@ -289,7 +289,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-TRIAGE-${Date.now()}`,
       timestamp,
       agentName: 'TRIAGE',
-      message: '[TRIAGE] Patient stabilized. Evacuating to specialized hospital...',
+      message: '[TRIAGE AGENT] Patient stabilized. Rerouting to specialized trauma center.',
       severity: 'WARN',
     };
 
@@ -478,7 +478,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-DELIVERED-${Date.now()}`,
       timestamp,
       agentName: 'COMMAND',
-      message: '[COMMAND] Patient admitted to triage. Unit restocked and available.',
+      message: '[COMMAND AGENT] Handover complete at emergency bay. Unit ready for redeployment.',
       severity: 'INFO',
     };
 
@@ -498,7 +498,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         if (r.id === 'AMB-03') {
           return {
             ...r,
-            status: 'ADMITTED_AT_HOSPITAL' as const,
+            status: 'AVAILABLE' as const,
             lifecycleStep: 6,
             currentEtaMinutes: 0,
             distanceRemainingKm: 0,
@@ -524,7 +524,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-AVAIL-${Date.now()}`,
       timestamp,
       agentName: 'COMMAND',
-      message: '[COMMAND] Patient admitted to triage. Unit restocked and available.',
+      message: '[COMMAND AGENT] Handover complete at emergency bay. Unit ready for redeployment.',
       severity: 'INFO',
     };
 

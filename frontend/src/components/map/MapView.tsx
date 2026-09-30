@@ -36,7 +36,7 @@ import {
   clearTrafficLayers,
   BENGALURU_DEFAULT_TRAFFIC_CORRIDORS,
 } from './TrafficLayers';
-import { slicePolylineAtProgress } from '../../utils/geoUtils';
+import { slicePolylineAtProgress, calculateBearing } from '../../utils/geoUtils';
 import { Layers, Satellite, Map as MapIcon, Moon, Activity, Compass } from 'lucide-react';
 
 export interface MapViewProps {
@@ -529,9 +529,14 @@ export const MapView: React.FC<MapViewProps> = ({
           // 1. Update marker position on Mapbox canvas directly at 60fps
           vehicleEntry.marker.setLngLat([sliced.position[0], sliced.position[1]]);
 
-          // 2. Smooth geographic turn-by-turn bearing rotation
-          const prevBearing = vehicleLastBearingRef.current[resource.id] ?? sliced.bearing;
-          const smoothBearing = lerpAngle(prevBearing, sliced.bearing, 0.22);
+          // 2. Smooth geographic turn-by-turn bearing rotation using calculateBearing
+          const currentCoord = sliced.position;
+          const nextCoord = sliced.remaining[0] ?? sliced.position;
+          const roadBearing = sliced.remaining.length > 0
+            ? calculateBearing(currentCoord, nextCoord)
+            : sliced.bearing;
+          const prevBearing = vehicleLastBearingRef.current[resource.id] ?? roadBearing;
+          const smoothBearing = lerpAngle(prevBearing, roadBearing, 0.22);
           vehicleLastBearingRef.current[resource.id] = smoothBearing;
 
           const headingWrapper = vehicleEntry.element.querySelector<HTMLElement>(`[data-heading-wrapper="${resource.id}"]`);
@@ -548,7 +553,6 @@ export const MapView: React.FC<MapViewProps> = ({
 
           const isArrived = currentProgress >= 0.99;
           const isImminent = !isArrived && sliced.etaMinutes <= 0.2;
-          const targetHospName = resource.targetHospitalName ?? 'Victoria Hospital';
 
           // Trigger subtle green pulse on the receiving hospital marker when ambulance arrives
           if (isLeg2 && (isArrived || isDelivered)) {
@@ -562,25 +566,19 @@ export const MapView: React.FC<MapViewProps> = ({
           // 4. Update Milestone A, B, C Narrative floating tags
           if (milestoneTagEl) {
             if (isRerouted) {
-              if (currentProgress < 0.35) {
-                milestoneTagEl.className =
-                  'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-amber-950/95 border border-amber-400 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse';
-                milestoneTagEl.textContent = 'AI RECALCULATING: CHOKEPOINT AHEAD';
-              } else {
-                milestoneTagEl.className =
-                  'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-cyan-950/95 border border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.6)]';
-                milestoneTagEl.textContent = 'BYPASS LOCKED: VICTORIA LAYOUT';
-              }
+              milestoneTagEl.className =
+                'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-amber-950/95 border border-amber-400 text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.8)] animate-pulse';
+              milestoneTagEl.textContent = '⚠️ Traffic Gridlock Detected (+11 min delay)';
             } else if (isOnScene) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.7)] animate-pulse';
-              milestoneTagEl.textContent = '[ON SCENE: STABILIZING PATIENT]';
+              milestoneTagEl.textContent = '[ON SCENE: STABILIZING PATIENT (4s)]';
             } else if (isEvacuating) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.7)]';
               milestoneTagEl.textContent = isArrived
                 ? '[AVAILABLE / READY]'
-                : `🚑 EVACUATING PATIENT -> ${targetHospName} (ETA: ${sliced.etaMinutes} min)`;
+                : '[EVACUATING -> HOSPITAL]';
             } else if (isDelivered) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.6)]';
@@ -684,13 +682,13 @@ export const MapView: React.FC<MapViewProps> = ({
       {/* Grid Scanline Overlay for Cybernetic Tactical Command Room Aesthetic */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(11,15,25,0.4)_100%)] z-1" />
 
-      {/* Dynamic Traffic Chokepoint Interception Alert Banner (2-Second Animated Warning) */}
+      {/* Dynamic Traffic Chokepoint Interception Alert Banner (Warning HUD) */}
       {trafficAlertBanner && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
           <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-red-950/95 border-2 border-red-500 text-red-100 shadow-[0_0_35px_rgba(239,68,68,0.95)] backdrop-blur-md">
             <div className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
             <span className="font-mono font-black text-xs tracking-wider uppercase text-red-200">
-              [TRAFFIC CHOKEPOINT DETECTED]
+              ⚠️ Traffic Gridlock Detected (+11 min delay)
             </span>
             <span className="text-[10px] font-mono text-amber-300 font-semibold border-l border-red-700/80 pl-2">
               AUTOMATIC BYPASS ROUTE ENGAGED
