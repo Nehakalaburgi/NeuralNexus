@@ -1,7 +1,6 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * useEmergencyState Custom State Management Hook
- * Strictly typed with zero placeholders, full state snapshot management, and dormant WebSocket client.
+ * State Management & WebSocket Hooks
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -29,16 +28,17 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   const [worldState, setWorldState] = useState<WorldState>(initialWorldState);
   const [isMockMode, setIsMockMode] = useState<boolean>(true);
   const [isConnected, setIsConnected] = useState<boolean>(true);
-  const [lastHeartbeat, setLastHeartbeat] = useState<string | null>(() => new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST');
+  const [lastHeartbeat, setLastHeartbeat] = useState<string | null>(
+    () => new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST'
+  );
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Action 1: Inject Disruption
-   * Transitions system to Disrupted State (AMB-02 breakdown + Sev-5 Crash at MG Road + Reallocation Proposal)
    */
   const injectDisruption = useCallback(() => {
     setWorldState(disruptedWorldState);
@@ -48,7 +48,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * Action 2: Human-In-The-Loop Approval
-   * Commits the proposed reallocation route, locks AMB-01 to Sev-5 MG Road crash, and clears pending modal.
    */
   const approveReallocation = useCallback(() => {
     setWorldState((prev) => {
@@ -57,7 +56,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       const approval = prev.pendingApproval;
       const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
 
-      // 1. Commit and finalize the route polyline (turn solid cyan)
+      // 1. Commit and finalize route polyline (solid cyan)
       const updatedRoutes: RouteGeometry[] = prev.activeRoutes
         .filter((r) => r.id !== 'ROUTE-02-ORIGINAL' && r.id !== 'ROUTE-03-PENDING')
         .concat([
@@ -123,7 +122,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         id: `LOG-TRG-${Date.now() + 1}`,
         timestamp,
         agentName: 'TRIAGE',
-        message: `Koramangala call #INC-02 placed in high-priority mutual aid standby queue. Secondary BLS dispatch requested.`,
+        message: `Koramangala call #${approval.previousIncidentId} placed in high-priority mutual aid standby queue. Secondary BLS dispatch requested.`,
         severity: 'WARN',
       };
 
@@ -145,7 +144,6 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * Action 3: Human-In-The-Loop Rejection
-   * Rejects the proposed reallocation, maintains original unit course to Koramangala, and clears pending modal.
    */
   const rejectReallocation = useCallback(() => {
     setWorldState((prev) => {
@@ -154,7 +152,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       const approval = prev.pendingApproval;
       const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false }) + ' IST';
 
-      // 1. Remove pending route and restore original route color
+      // 1. Remove pending route and restore original route
       const updatedRoutes: RouteGeometry[] = prev.activeRoutes
         .filter((r) => r.id !== 'ROUTE-03-PENDING')
         .map((r) => {
@@ -168,7 +166,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
           return r;
         });
 
-      // 2. Revert resource assignment
+      // 2. Revert resource assignment to previous call
       const updatedResources = prev.resources.map((res) => {
         if (res.id === approval.resourceId) {
           return {
@@ -182,18 +180,31 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         return res;
       });
 
-      // 3. Append operator override audit log
+      // 3. Re-link previous incident back to original unit
+      const updatedIncidents = prev.activeIncidents.map((inc) => {
+        if (inc.id === approval.previousIncidentId) {
+          return {
+            ...inc,
+            status: 'ASSIGNED' as const,
+            assignedResourceId: approval.resourceId,
+          };
+        }
+        return inc;
+      });
+
+      // 4. Append operator override audit log
       const rejectionLog: AgentLog = {
         id: `LOG-REJ-${Date.now()}`,
         timestamp,
         agentName: 'COMMAND',
-        message: `OPERATOR OVERRIDE: Reallocation [${approval.id}] REJECTED. ${approval.resourceName} maintaining course to original scene. External mutual aid requested for MG Road crash.`,
+        message: `OPERATOR OVERRIDE: Reallocation [${approval.id}] REJECTED. ${approval.resourceName} maintaining course to original scene. External mutual aid requested for ${approval.incidentTitle}.`,
         severity: 'WARN',
       };
 
       return {
         ...prev,
         systemStatus: 'ONLINE',
+        activeIncidents: updatedIncidents,
         resources: updatedResources,
         activeRoutes: updatedRoutes,
         pendingApproval: null,
@@ -203,7 +214,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * Action 4: Reset Grid State to Baseline Benchmark
+   * Action 4: Reset Grid State
    */
   const resetState = useCallback(() => {
     setWorldState(initialWorldState);
@@ -213,7 +224,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * Action 5: Toggle Mock / Live WebSocket Mode
+   * Action 5: Toggle Mode
    */
   const toggleMockMode = useCallback(() => {
     setIsMockMode((prev) => !prev);
@@ -231,7 +242,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
   }, []);
 
   /**
-   * Live WebSocket Listener (Dormant in Mock Mode, active when isMockMode === false)
+   * Live WebSocket Listener
    */
   useEffect(() => {
     if (isMockMode) {
@@ -278,8 +289,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         socket.onclose = () => {
           if (!isMounted) return;
           setIsConnected(false);
-          // Reconnection schedule (every 5 seconds)
-          reconnectTimeoutRef.current = window.setTimeout(() => {
+          reconnectTimeoutRef.current = setTimeout(() => {
             if (isMounted && !isMockMode) {
               connectWebSocket();
             }
@@ -324,3 +334,88 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     selectResource,
   };
 };
+
+/**
+ * Standalone auxiliary hook for granular event-based socket feeds
+ */
+export interface EmergencySocketData<TIncident = unknown, TResource = unknown, TAssignment = unknown, TLog = unknown> {
+  incidents: TIncident[];
+  resources: TResource[];
+  assignments: TAssignment[];
+  logs: TLog[];
+}
+
+export function useEmergencySocket<TIncident = unknown, TResource = unknown, TAssignment = unknown, TLog = unknown>(
+  wsUrl: string = 'ws://localhost:5000'
+) {
+  const [data, setData] = useState<EmergencySocketData<TIncident, TResource, TAssignment, TLog>>({
+    incidents: [],
+    resources: [],
+    assignments: [],
+    logs: [],
+  });
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    const httpUrl = wsUrl.replace(/^ws/, 'http');
+
+    // 1. Initial REST fetch for baseline state
+    fetch(`${httpUrl}/api/state`, { credentials: 'omit', signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error status ${res.status}`);
+        return res.json();
+      })
+      .then((initialData: Partial<EmergencySocketData<TIncident, TResource, TAssignment, TLog>>) => {
+        if (isMounted && initialData) {
+          setData((prev) => ({ ...prev, ...initialData }));
+        }
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.error('Initial state fetch error:', err);
+      });
+
+    // 2. Open live WebSocket connection
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      if (isMounted) setIsConnected(true);
+    };
+
+    socket.onclose = () => {
+      if (isMounted) setIsConnected(false);
+    };
+
+    socket.onerror = (err) => {
+      console.error('WebSocket encountered an error:', err);
+      if (isMounted) setIsConnected(false);
+    };
+
+    socket.onmessage = (event: MessageEvent<string>) => {
+      if (!isMounted) return;
+      try {
+        const message = JSON.parse(event.data);
+        if (message.event === 'STATE_UPDATED') {
+          setData(message.data);
+        } else if (message.event === 'DECISION_LOG_ADDED') {
+          setData((prev) => ({
+            ...prev,
+            logs: [message.data, ...(prev.logs || [])],
+          }));
+        }
+      } catch (err) {
+        console.error('WS Parse error:', err);
+      }
+    };
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+      socket.close();
+    };
+  }, [wsUrl]);
+
+  return { ...data, isConnected };
+}
