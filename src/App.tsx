@@ -4,7 +4,7 @@
  * Integrates Mapbox GL canvas with floating tactical overlays, HITL approval gate, and simulation controls.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEmergencyState } from './hooks/useEmergencyState';
 import { MapView } from './components/map/MapView';
 import { TopNav } from './components/layout/TopNav';
@@ -33,6 +33,17 @@ export const App: React.FC = () => {
     selectResource,
   } = useEmergencyState();
 
+  // Telemetry status logging
+  useEffect(() => {
+    if (!isMockMode) {
+      console.log(
+        isConnected
+          ? '✅ Connected to ResQAlloc backend WebSocket stream'
+          : '⚠️ ResQAlloc WebSocket disconnected, attempting reconnect...'
+      );
+    }
+  }, [isConnected, isMockMode]);
+
   const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
   const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
 
@@ -41,8 +52,8 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-[#0b0f19] text-slate-100">
-      {/* 1. Full-Screen Mapbox GL Geospatial Canvas (z-0) */}
+    <main className="relative w-screen h-screen overflow-hidden bg-[#0b0f19] text-slate-100 select-none">
+      {/* 1. Full-Screen Geospatial Canvas (z-0) */}
       <MapView
         worldState={worldState}
         selectedIncidentId={selectedIncidentId}
@@ -69,7 +80,7 @@ export const App: React.FC = () => {
         onResetState={resetState}
       />
 
-      {/* 3. Left Hover-Expandable Active Incident Drawer (z-20) */}
+      {/* 3. Left Incident Drawer (z-20) */}
       <IncidentDrawer
         incidents={worldState.activeIncidents}
         hospitals={worldState.hospitals}
@@ -79,7 +90,7 @@ export const App: React.FC = () => {
         onSelectIncident={(incident) => selectIncident(incident.id)}
       />
 
-      {/* 4. Right Hover-Expandable Fleet Inventory Drawer (z-20) */}
+      {/* 4. Right Fleet Inventory Drawer (z-20) */}
       <FleetDrawer
         resources={worldState.resources}
         hospitals={worldState.hospitals}
@@ -88,13 +99,13 @@ export const App: React.FC = () => {
         onSelectResource={(resource) => selectResource(resource.id)}
       />
 
-      {/* 5. Lower-Right Multi-Agent Telemetry Terminal Stream (z-20) */}
+      {/* 5. Telemetry Terminal Stream (z-20) */}
       <AgentTelemetry
         logs={worldState.agentLogs}
         systemStatus={worldState.systemStatus}
       />
 
-      {/* 6. Bottom Floating Pitch Simulation Dock (z-20) */}
+      {/* 6. Pitch Simulation Dock (z-20) */}
       <DemoControls
         systemStatus={worldState.systemStatus}
         isTrafficCongested={worldState.isTrafficCongested}
@@ -105,7 +116,7 @@ export const App: React.FC = () => {
         onReset={resetState}
       />
 
-      {/* 7. Human-In-The-Loop (HITL) Unit Reallocation Modal (z-50) */}
+      {/* 7. Human-In-The-Loop Approval Modal (z-50) */}
       <ApprovalModal
         pendingApproval={worldState.pendingApproval}
         onApprove={approveReallocation}

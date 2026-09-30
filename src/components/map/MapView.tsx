@@ -68,7 +68,7 @@ const MAPBOX_STYLES: Record<MapStyleId, { label: string; url: string; icon: Reac
   },
   streets: {
     label: 'Nav Streets',
-    url: 'mapbox://styles/mapbox/navigation-night-v1',
+    url: 'mapbox://styles/mapbox/streets-v12',
     icon: <MapIcon className="w-3.5 h-3.5" />,
   },
 };
@@ -94,6 +94,7 @@ export const MapView: React.FC<MapViewProps> = ({
   // Active Map Style state
   const [internalMapStyle, setInternalMapStyle] = useState<MapStyleId>('dark');
   const currentMapStyle = externalMapStyle ?? internalMapStyle;
+  const currentAppliedStyleRef = useRef<MapStyleId>('dark');
 
   // Active Traffic Overlay state
   const [internalShowTraffic, setInternalShowTraffic] = useState<boolean>(true);
@@ -113,23 +114,15 @@ export const MapView: React.FC<MapViewProps> = ({
     } else {
       setInternalMapStyle(styleId);
     }
-
-    const map = mapRef.current;
-    if (map) {
-      map.setStyle(MAPBOX_STYLES[styleId].url);
-      map.once('style.load', () => {
-        clearAllVehicleLivePaths(map);
-        initTrafficLayers(map, showTraffic, worldState.trafficSegments ?? BENGALURU_DEFAULT_TRAFFIC_CORRIDORS);
-        syncRouteLayers(map, worldState.activeRoutes, selectedIncidentId, selectedResourceId);
-      });
-    }
-  }, [externalOnSelectMapStyle, showTraffic, worldState.trafficSegments, worldState.activeRoutes, selectedIncidentId, selectedResourceId]);
+  }, [externalOnSelectMapStyle]);
 
   // Token management: Ingest from env or allow runtime fallback configuration
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-  const [activeToken, setActiveToken] = useState<string>(() => envToken || '');
+  const isPlaceholderToken = (tok?: string) => !tok || tok.includes('...') || tok.trim().length < 25;
+  const validEnvToken = isPlaceholderToken(envToken) ? '' : envToken!.trim();
+  const [activeToken, setActiveToken] = useState<string>(() => validEnvToken);
   const [manualTokenInput, setManualTokenInput] = useState<string>('');
-  const [isTokenMissing, setIsTokenMissing] = useState<boolean>(() => !envToken);
+  const [isTokenMissing, setIsTokenMissing] = useState<boolean>(() => !validEnvToken);
 
   // Vehicle along-route animation progress references (0.0 to 1.0) and on-scene pause timers
   const unitProgressRef = useRef<Record<string, number>>({});
@@ -160,6 +153,7 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     mapRef.current = map;
+    currentAppliedStyleRef.current = currentMapStyle;
 
     // Tactical navigation controls (bottom-right)
     map.addControl(
@@ -202,14 +196,46 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [activeToken]);
 
   /**
-   * 2. Synchronize Traffic Visibility when toggled
+   * 2. Synchronize Mapbox Style when changed (from TopNav or MapView controls)
    */
   useEffect(() => {
     const map = mapRef.current;
-    if (map) {
+    if (!map) return;
+    if (currentAppliedStyleRef.current === currentMapStyle) return;
+
+    const targetStyle = MAPBOX_STYLES[currentMapStyle];
+    if (!targetStyle) return;
+
+    currentAppliedStyleRef.current = currentMapStyle;
+
+    const applyStyle = () => {
+      map.setStyle(targetStyle.url);
+      map.once('style.load', () => {
+        clearAllRouteLayers(map);
+        initTrafficLayers(map, showTraffic, worldState.trafficSegments ?? BENGALURU_DEFAULT_TRAFFIC_CORRIDORS);
+        syncRouteLayers(map, worldState.activeRoutes, selectedIncidentId, selectedResourceId);
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      applyStyle();
+    } else {
+      map.once('load', applyStyle);
+    }
+  }, [currentMapStyle, showTraffic, worldState.trafficSegments, worldState.activeRoutes, selectedIncidentId, selectedResourceId]);
+
+  /**
+   * 3. Synchronize Traffic Visibility when toggled
+   */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && map.isStyleLoaded()) {
+      if (showTraffic) {
+        initTrafficLayers(map, true, worldState.trafficSegments ?? BENGALURU_DEFAULT_TRAFFIC_CORRIDORS);
+      }
       setTrafficVisibility(map, showTraffic);
     }
-  }, [showTraffic]);
+  }, [showTraffic, worldState.trafficSegments]);
 
   /**
    * 3. Synchronize DOM Markers & Multi-Leg Routes on World State Update
