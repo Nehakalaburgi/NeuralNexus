@@ -36,12 +36,18 @@ export interface UseEmergencyStateReturn {
   selectedIncidentId: string | null;
   selectedResourceId: string | null;
   currentLifecycleStep: EmergencyLifecycleStep;
+  activePhase: number;
   isAutoPilot: boolean;
   isPlaying: boolean;
+  isPaused: boolean;
   playbackSpeed: PlaybackSpeed;
+  pendingApproval: any;
   togglePlayback: () => void;
-  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
+  togglePause: () => void;
+  setPlaybackSpeed: (speed: number) => void;
+  onSetPlaybackSpeed: (speed: number) => void;
   triggerLifecycleStep: (step: EmergencyLifecycleStep) => void;
+  triggerPhase: (phaseNumber: number) => void;
   step1Dispatch: () => void;
   step2TrafficGridlock: () => void;
   step3OnSceneTriage: () => void;
@@ -82,8 +88,8 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     setIsPlaying((prev) => !prev);
   }, []);
 
-  const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
-    setPlaybackSpeedState(speed);
+  const setPlaybackSpeed = useCallback((speed: number) => {
+    setPlaybackSpeedState((speed as PlaybackSpeed) || 1.0);
   }, []);
 
   const getTimestamp = () =>
@@ -948,12 +954,24 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
     selectedIncidentId,
     selectedResourceId,
     currentLifecycleStep,
+    activePhase: currentLifecycleStep,
     isAutoPilot,
     isPlaying,
+    isPaused: !isPlaying,
     playbackSpeed,
+    pendingApproval: worldState.pendingApproval
+      ? {
+          ...worldState.pendingApproval,
+          recommendedResourceId: worldState.pendingApproval.resourceId,
+          justification: worldState.pendingApproval.rationale,
+        }
+      : null,
     togglePlayback,
+    togglePause: togglePlayback,
     setPlaybackSpeed,
+    onSetPlaybackSpeed: setPlaybackSpeed,
     triggerLifecycleStep,
+    triggerPhase: (phaseNumber: number) => triggerLifecycleStep(phaseNumber as EmergencyLifecycleStep),
     step1Dispatch,
     step2TrafficGridlock,
     step3OnSceneTriage,

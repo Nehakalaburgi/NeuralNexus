@@ -23,10 +23,10 @@ import {
 import { WorldState, MapStyleId } from '../../types/emergency';
 
 export interface TopNavProps {
-  worldState: WorldState;
+  worldState?: WorldState;
   isMockMode: boolean;
-  isConnected: boolean;
-  lastHeartbeat: string | null;
+  isConnected?: boolean;
+  lastHeartbeat?: string | null;
   activeMapStyle?: MapStyleId;
   showTrafficOverlay?: boolean;
   is3DView?: boolean;
@@ -40,8 +40,8 @@ export interface TopNavProps {
 export const TopNav: React.FC<TopNavProps> = ({
   worldState,
   isMockMode,
-  isConnected,
-  lastHeartbeat,
+  isConnected = true,
+  lastHeartbeat = '12:00:00',
   activeMapStyle = 'dark',
   showTrafficOverlay = true,
   is3DView = false,
@@ -51,7 +51,13 @@ export const TopNav: React.FC<TopNavProps> = ({
   onToggleMockMode,
   onResetState,
 }) => {
-  const { metrics, systemStatus } = worldState;
+  const metrics = worldState?.metrics || {
+    activeIncidents: 3,
+    availableResources: 4,
+    totalFleet: 6,
+    avgResponseTimeMin: 4.2,
+  };
+  const systemStatus = worldState?.systemStatus || 'ONLINE';
 
   // Status indicator styling
   let statusBadgeClass = 'bg-cyan-950/80 border-cyan-500/60 text-cyan-400';

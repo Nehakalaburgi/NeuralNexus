@@ -1,154 +1,92 @@
-/**
- * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * Root Application Coordinator
- * Integrates Mapbox GL canvas with floating tactical overlays, HITL approval gate, and simulation controls.
- */
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useEmergencyState } from './hooks/useEmergencyState';
 import { MapView } from './components/map/MapView';
 import { TopNav } from './components/layout/TopNav';
-import { IncidentDrawer } from './components/panels/IncidentDrawer';
-import { FleetDrawer } from './components/panels/FleetDrawer';
-import { AgentTelemetry } from './components/panels/AgentTelemetry';
 import { DemoControls } from './components/layout/DemoControls';
 import { ApprovalModal } from './components/modals/ApprovalModal';
-import { MapStyleId } from './types/emergency';
+import { AgentTelemetry } from './components/panels/AgentTelemetry';
+import { FleetDrawer } from './components/panels/FleetDrawer';
+import { IncidentDrawer } from './components/panels/IncidentDrawer';
 
 export const App: React.FC = () => {
   const {
     worldState,
     isMockMode,
-    isConnected,
-    lastHeartbeat,
-    selectedIncidentId,
-    selectedResourceId,
-    currentLifecycleStep,
-    isAutoPilot,
-    isPlaying,
+    activePhase,
+    isPaused,
     playbackSpeed,
-    togglePlayback,
-    setPlaybackSpeed,
-    triggerLifecycleStep,
-    step2TrafficGridlock,
-    injectDisruption,
+    pendingApproval,
+    toggleMockMode,
+    triggerPhase,
     approveReallocation,
     rejectReallocation,
-    resetState,
-    toggleMockMode,
-    toggleAutoPilot,
-    selectIncident,
-    selectResource,
+    togglePause,
+    setPlaybackSpeed,
+    resetSimulation,
   } = useEmergencyState();
 
-  // Telemetry status logging
-  useEffect(() => {
-    if (!isMockMode) {
-      console.log(
-        isConnected
-          ? '✅ Connected to ResQAlloc backend WebSocket stream'
-          : '⚠️ ResQAlloc WebSocket disconnected, attempting reconnect...'
-      );
-    }
-  }, [isConnected, isMockMode]);
-
-  const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
-  const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
-  const [is3DView, setIs3DView] = useState<boolean>(false);
-
-  const toggleTrafficOverlay = () => {
-    setShowTrafficOverlay((prev) => !prev);
-  };
-
-  const toggle3DView = () => {
-    setIs3DView((prev) => !prev);
-  };
-
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-[#0b0f19] text-slate-100 select-none">
-      {/* 1. Full-Screen Geospatial Canvas (z-0) */}
-      <MapView
-        worldState={worldState}
-        selectedIncidentId={selectedIncidentId}
-        selectedResourceId={selectedResourceId}
-        activeMapStyle={activeMapStyle}
-        showTrafficOverlay={showTrafficOverlay}
-        is3DView={is3DView}
-        isPlaying={isPlaying}
-        playbackSpeed={playbackSpeed}
-        onSelectMapStyle={setActiveMapStyle}
-        onToggleTrafficOverlay={toggleTrafficOverlay}
-        onToggle3DView={toggle3DView}
-        onSelectIncident={(incident) => selectIncident(incident.id)}
-        onSelectResource={(resource) => selectResource(resource.id)}
-      />
+    <div className="flex flex-col h-screen w-screen bg-slate-950 overflow-hidden text-slate-100 font-sans select-none">
+      {/* 1. Top Tactical Header Navigation */}
+      <TopNav isMockMode={isMockMode} onToggleMockMode={toggleMockMode} />
 
-      {/* 2. Tactical Telemetry Navigation Header (z-30) */}
-      <TopNav
-        worldState={worldState}
-        isMockMode={isMockMode}
-        isConnected={isConnected}
-        lastHeartbeat={lastHeartbeat}
-        activeMapStyle={activeMapStyle}
-        showTrafficOverlay={showTrafficOverlay}
-        is3DView={is3DView}
-        onSelectMapStyle={setActiveMapStyle}
-        onToggleTrafficOverlay={toggleTrafficOverlay}
-        onToggle3DView={toggle3DView}
-        onToggleMockMode={toggleMockMode}
-        onResetState={resetState}
-      />
+      {/* 2. Main Geospatial Workstation Layout */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Side Panel: Active Incident Feeds */}
+        <aside className="w-80 border-r border-slate-800 flex flex-col bg-slate-900/60 backdrop-blur-md z-10 shrink-0 shadow-xl">
+          <IncidentDrawer incidents={worldState.activeIncidents} />
+        </aside>
 
-      {/* 3. Left Incident Drawer (z-20) */}
-      <IncidentDrawer
-        incidents={worldState.activeIncidents}
-        hospitals={worldState.hospitals}
-        resources={worldState.resources}
-        routes={worldState.activeRoutes}
-        selectedIncidentId={selectedIncidentId}
-        onSelectIncident={(incident) => selectIncident(incident.id)}
-      />
+        {/* Center Canvas: Interactive Map Visualization & Demo Control Dock */}
+        <main className="flex-1 relative flex flex-col min-w-0">
+          <div className="flex-1 relative overflow-hidden">
+            <MapView
+              worldState={worldState}
+              isPaused={isPaused}
+              playbackSpeed={playbackSpeed}
+            />
+          </div>
 
-      {/* 4. Right Fleet Inventory Drawer (z-20) */}
-      <FleetDrawer
-        resources={worldState.resources}
-        hospitals={worldState.hospitals}
-        metrics={worldState.metrics}
-        selectedResourceId={selectedResourceId}
-        onSelectResource={(resource) => selectResource(resource.id)}
-      />
+          {/* Bottom Dock: Presentation & Scenario Controls */}
+          <div className="shrink-0 z-20">
+            <DemoControls
+              activePhase={activePhase}
+              isPaused={isPaused}
+              playbackSpeed={playbackSpeed}
+              onTriggerPhase={triggerPhase}
+              onTogglePause={togglePause}
+              onSetPlaybackSpeed={setPlaybackSpeed}
+              onResetSimulation={resetSimulation}
+            />
+          </div>
+        </main>
 
-      {/* 5. Telemetry Terminal Stream (z-20) */}
-      <AgentTelemetry
-        logs={worldState.agentLogs}
-        systemStatus={worldState.systemStatus}
-      />
+        {/* Right Side Panel: Multi-Agent Telemetry & Resource Fleet Drawer */}
+        <aside className="w-88 border-l border-slate-800 flex flex-col bg-slate-900/60 backdrop-blur-md z-10 shrink-0 shadow-xl">
+          <section className="h-1/2 border-b border-slate-800 overflow-hidden flex flex-col">
+            <AgentTelemetry logs={worldState.agentLogs} />
+          </section>
+          <section className="h-1/2 overflow-hidden flex flex-col">
+            <FleetDrawer
+              resources={worldState.resources}
+              hospitals={worldState.hospitals}
+            />
+          </section>
+        </aside>
+      </div>
 
-      {/* 6. Pitch Simulation Dock (z-20) */}
-      <DemoControls
-        systemStatus={worldState.systemStatus}
-        isTrafficCongested={worldState.isTrafficCongested}
-        hasPendingApproval={worldState.pendingApproval !== null}
-        currentLifecycleStep={currentLifecycleStep}
-        isAutoPilot={isAutoPilot}
-        isPlaying={isPlaying}
-        playbackSpeed={playbackSpeed}
-        onSelectLifecycleStep={triggerLifecycleStep}
-        onToggleAutoPilot={toggleAutoPilot}
-        onTogglePlayPause={togglePlayback}
-        onSelectSpeed={setPlaybackSpeed}
-        onInjectTrafficJam={step2TrafficGridlock}
-        onInjectDisruption={injectDisruption}
-        onReset={resetState}
-      />
-
-      {/* 7. Human-In-The-Loop Approval Modal (z-50) */}
-      <ApprovalModal
-        pendingApproval={worldState.pendingApproval}
-        onApprove={approveReallocation}
-        onReject={rejectReallocation}
-      />
-    </main>
+      {/* 3. Human-in-the-Loop (HITL) Verification Modal */}
+      {pendingApproval && (
+        <ApprovalModal
+          isOpen={true}
+          incidentId={pendingApproval.incidentId}
+          recommendedResourceId={pendingApproval.recommendedResourceId}
+          justification={pendingApproval.justification}
+          onApprove={approveReallocation}
+          onReject={rejectReallocation}
+        />
+      )}
+    </div>
   );
 };
 

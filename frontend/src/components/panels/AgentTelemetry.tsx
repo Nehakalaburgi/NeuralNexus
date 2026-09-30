@@ -18,10 +18,10 @@ import { AgentLog, AgentName, SystemStatus } from '../../types/emergency';
 
 export interface AgentTelemetryProps {
   logs: AgentLog[];
-  systemStatus: SystemStatus;
+  systemStatus?: SystemStatus;
 }
 
-export const AgentTelemetry: React.FC<AgentTelemetryProps> = ({ logs, systemStatus }) => {
+export const AgentTelemetry: React.FC<AgentTelemetryProps> = ({ logs, systemStatus = 'ONLINE' }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [selectedAgentFilter, setSelectedAgentFilter] = useState<AgentName | 'ALL'>('ALL');
   const scrollBottomRef = useRef<HTMLDivElement | null>(null);

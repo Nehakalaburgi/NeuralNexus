@@ -26,15 +26,20 @@ import { Resource, Hospital, WorldMetrics, ResourceStatus } from '../../types/em
 export interface FleetDrawerProps {
   resources: Resource[];
   hospitals: Hospital[];
-  metrics: WorldMetrics;
+  metrics?: WorldMetrics;
   selectedResourceId?: string | null;
-  onSelectResource: (resource: Resource) => void;
+  onSelectResource?: (resource: Resource) => void;
 }
 
 export const FleetDrawer: React.FC<FleetDrawerProps> = ({
   resources,
   hospitals,
-  metrics,
+  metrics = {
+    activeIncidents: 3,
+    availableResources: resources.filter((r) => r.status === 'AVAILABLE' || r.status === 'IDLE').length,
+    totalFleet: resources.length,
+    avgResponseTimeMin: 4.2,
+  },
   selectedResourceId,
   onSelectResource,
 }) => {
@@ -259,7 +264,7 @@ export const FleetDrawer: React.FC<FleetDrawerProps> = ({
                 return (
                   <div
                     key={resource.id}
-                    onClick={() => onSelectResource(resource)}
+                    onClick={() => onSelectResource?.(resource)}
                     className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer border ${
                       isSelected
                         ? `bg-slate-900/95 ${visual.selectedBorder}`

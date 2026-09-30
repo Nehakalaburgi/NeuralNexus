@@ -24,16 +24,16 @@ import { getIncidentCategory } from '../map/MapMarkers';
 
 export interface IncidentDrawerProps {
   incidents: Incident[];
-  hospitals: Hospital[];
+  hospitals?: Hospital[];
   resources?: Resource[];
   routes?: RouteGeometry[];
   selectedIncidentId?: string | null;
-  onSelectIncident: (incident: Incident) => void;
+  onSelectIncident?: (incident: Incident) => void;
 }
 
 export const IncidentDrawer: React.FC<IncidentDrawerProps> = ({
   incidents,
-  hospitals,
+  hospitals = [],
   resources = [],
   selectedIncidentId,
   onSelectIncident,
@@ -190,7 +190,7 @@ export const IncidentDrawer: React.FC<IncidentDrawerProps> = ({
                 return (
                   <div
                     key={incident.id}
-                    onClick={() => onSelectIncident(incident)}
+                    onClick={() => onSelectIncident?.(incident)}
                     className={`p-3 rounded-xl transition-all duration-200 cursor-pointer border ${
                       isSelected
                         ? `bg-slate-900/95 ${visual.selectedBorder}`
