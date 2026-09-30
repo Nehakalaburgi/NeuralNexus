@@ -1,9 +1,9 @@
-﻿# 1. Fetch current database state
+# 1. Fetch current database state
 $state = Invoke-RestMethod -Uri "http://localhost:5000/api/state" -Method Get
 
-$medEmergency = $state.incidents \vert{} Where-Object {$_.title -like "*Medical Emergency*" } | Select-Object -First 1
-$amb01 = $state.resources \vert{} Where-Object {$_.callsign -eq "Ambulance 01" } | Select-Object -First 1
-$amb02 = $state.resources \vert{} Where-Object {$_.callsign -eq "Ambulance 02" } | Select-Object -First 1
+$medEmergency = $state.data.incidents | Where-Object {$_.title -like "*Medical Emergency*" } | Select-Object -First 1
+$amb01 = $state.data.resources | Where-Object {$_.callsign -eq "Ambulance 01" } | Select-Object -First 1
+$amb02 = $state.data.resources | Where-Object {$_.callsign -eq "Ambulance 02" } | Select-Object -First 1
 
 Write-Host "Found Incident ID: $($medEmergency._id)" -ForegroundColor Cyan
 Write-Host "Found Amb 01 ID:   $($amb01._id)" -ForegroundColor Cyan

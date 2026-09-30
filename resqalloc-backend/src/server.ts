@@ -149,29 +149,93 @@ app.get("/api/state", async (_req: Request, res: Response) => {
     }
 });
 
+// Default demo datasets for automatic seeding
+const DEFAULT_DEMO_INCIDENTS = [
+    {
+        title: "Medical Emergency (Cardiac Arrest)",
+        description: "Patient experiencing severe chest pain requiring immediate ALS ambulance intervention.",
+        locationName: "Koramangala 5th Block, Bengaluru",
+        coordinates: [77.6200, 12.9352],
+        severity: 4,
+        urgency: "CRITICAL",
+        requiredResources: ["ambulance"],
+        status: "PENDING",
+    },
+    {
+        title: "Commercial Complex Structural Fire",
+        description: "Active electrical fire reported with entrapment risks.",
+        locationName: "100ft Rd, Indiranagar, Bengaluru",
+        coordinates: [77.6413, 12.9784],
+        severity: 4,
+        urgency: "HIGH",
+        requiredResources: ["fireTruck", "ambulance"],
+        status: "PENDING",
+    },
+    {
+        title: "Multi-Vehicle Collision on MG Road",
+        description: "High speed collision requiring heavy rescue and paramedic support.",
+        locationName: "MG Road Junction, Bengaluru",
+        coordinates: [77.6074, 12.9756],
+        severity: 5,
+        urgency: "CRITICAL",
+        requiredResources: ["ambulance", "rescueSquad"],
+        status: "PENDING",
+    },
+];
+
+const DEFAULT_DEMO_RESOURCES = [
+    {
+        callsign: "Ambulance 01",
+        type: "ambulance",
+        coordinates: [77.6050, 12.9550],
+        status: "IDLE",
+        currentIncidentId: null,
+    },
+    {
+        callsign: "Ambulance 02",
+        type: "ambulance",
+        coordinates: [77.6000, 12.9760],
+        status: "IDLE",
+        currentIncidentId: null,
+    },
+    {
+        callsign: "Fire Tender 01",
+        type: "fireTruck",
+        coordinates: [77.6250, 12.9740],
+        status: "IDLE",
+        currentIncidentId: null,
+    },
+    {
+        callsign: "Rescue Squad 01",
+        type: "rescueSquad",
+        coordinates: [77.5739, 12.9634],
+        status: "IDLE",
+        currentIncidentId: null,
+    },
+];
+
 // POST /api/seed
 app.post("/api/seed", async (req: Request, res: Response) => {
-    const session = await mongoose.startSession();
     try {
-        const { incidents = [], resources = [] } = req.body;
-        let createdIncidents: any[] = [];
-        let createdResources: any[] = [];
+        const body = req.body || {};
+        const incidentsToSeed =
+            Array.isArray(body.incidents) && body.incidents.length > 0
+                ? body.incidents
+                : DEFAULT_DEMO_INCIDENTS;
+        const resourcesToSeed =
+            Array.isArray(body.resources) && body.resources.length > 0
+                ? body.resources
+                : DEFAULT_DEMO_RESOURCES;
 
-        await session.withTransaction(async () => {
-            await Promise.all([
-                IncidentModel.deleteMany({}, { session }),
-                ResourceModel.deleteMany({}, { session }),
-                AssignmentModel.deleteMany({}, { session }),
-                DecisionLogModel.deleteMany({}, { session }),
-            ]);
+        await Promise.all([
+            IncidentModel.deleteMany({}),
+            ResourceModel.deleteMany({}),
+            AssignmentModel.deleteMany({}),
+            DecisionLogModel.deleteMany({}),
+        ]);
 
-            if (incidents.length > 0) {
-                createdIncidents = await IncidentModel.insertMany(incidents, { session });
-            }
-            if (resources.length > 0) {
-                createdResources = await ResourceModel.insertMany(resources, { session });
-            }
-        });
+        const createdIncidents = await IncidentModel.insertMany(incidentsToSeed);
+        const createdResources = await ResourceModel.insertMany(resourcesToSeed);
 
         const state = await safeBroadcastState();
         return res.json({
@@ -182,14 +246,12 @@ app.post("/api/seed", async (req: Request, res: Response) => {
         });
     } catch (err) {
         return res.status(500).json({ error: "Seed failed", details: formatError(err) });
-    } finally {
-        await session.endSession();
     }
 });
 
 // PATCH /api/resources/:id/status
 app.patch("/api/resources/:id/status", async (req: Request, res: Response) => {
-    const { status } = req.body;
+    const { status } = req.body || {};
     const resourceId = req.params.id;
 
     if (!status || typeof status !== "string") {
@@ -390,7 +452,7 @@ async function executeDispatch(
 
 // POST /api/assignments/validate-and-assign
 app.post("/api/assignments/validate-and-assign", async (req: Request, res: Response) => {
-    const { incidentId, proposedResourceId, reason } = req.body;
+    const { incidentId, proposedResourceId, reason } = req.body || {};
     return executeDispatch(
         incidentId,
         proposedResourceId,
@@ -402,7 +464,7 @@ app.post("/api/assignments/validate-and-assign", async (req: Request, res: Respo
 
 // POST /api/assignments/approve
 app.post("/api/assignments/approve", async (req: Request, res: Response) => {
-    const { incidentId, proposedResourceId, rationale, approved } = req.body;
+    const { incidentId, proposedResourceId, rationale, approved } = req.body || {};
 
     if (approved === false) {
         try {
