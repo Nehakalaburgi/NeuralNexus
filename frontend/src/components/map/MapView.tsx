@@ -118,9 +118,34 @@ export const MapView: React.FC<MapViewProps> = ({
   const [internalShowTraffic, setInternalShowTraffic] = useState<boolean>(true);
   const showTraffic = externalShowTraffic ?? internalShowTraffic;
 
+  // Dynamic Traffic Chokepoint Interception Alert State (2-second banner)
+  const [trafficAlertBanner, setTrafficAlertBanner] = useState<boolean>(false);
+  const trafficBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 3D Tactical Camera State
   const [internalIs3DView, setInternalIs3DView] = useState<boolean>(false);
   const is3DView = externalIs3DView !== undefined ? externalIs3DView : internalIs3DView;
+
+  // Trigger 2-second Traffic Chokepoint Alert Banner when traffic congestion is detected
+  useEffect(() => {
+    if (worldState.isTrafficCongested) {
+      setTrafficAlertBanner(true);
+      if (trafficBannerTimerRef.current) {
+        clearTimeout(trafficBannerTimerRef.current);
+      }
+      trafficBannerTimerRef.current = setTimeout(() => {
+        setTrafficAlertBanner(false);
+        trafficBannerTimerRef.current = null;
+      }, 2000);
+    } else {
+      setTrafficAlertBanner(false);
+    }
+    return () => {
+      if (trafficBannerTimerRef.current) {
+        clearTimeout(trafficBannerTimerRef.current);
+      }
+    };
+  }, [worldState.isTrafficCongested]);
 
   const toggleTraffic = useCallback(() => {
     if (externalOnToggleTraffic) {
@@ -549,17 +574,17 @@ export const MapView: React.FC<MapViewProps> = ({
             } else if (isOnScene) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.7)] animate-pulse';
-              milestoneTagEl.textContent = 'ON SCENE: STABILIZING PATIENT';
+              milestoneTagEl.textContent = '[ON SCENE: STABILIZING PATIENT]';
             } else if (isEvacuating) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.7)]';
               milestoneTagEl.textContent = isArrived
-                ? 'HANDED OVER - BEDS UPDATED'
+                ? '[AVAILABLE / READY]'
                 : `🚑 EVACUATING PATIENT -> ${targetHospName} (ETA: ${sliced.etaMinutes} min)`;
             } else if (isDelivered) {
               milestoneTagEl.className =
                 'absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[8px] font-mono font-black tracking-wide shadow-xl pointer-events-none whitespace-nowrap z-20 transition-all duration-300 bg-emerald-950/95 border border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.6)]';
-              milestoneTagEl.textContent = 'HANDED OVER - BEDS UPDATED';
+              milestoneTagEl.textContent = '[AVAILABLE / READY]';
             } else {
               milestoneTagEl.className = 'hidden';
             }
@@ -658,6 +683,21 @@ export const MapView: React.FC<MapViewProps> = ({
 
       {/* Grid Scanline Overlay for Cybernetic Tactical Command Room Aesthetic */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(11,15,25,0.4)_100%)] z-1" />
+
+      {/* Dynamic Traffic Chokepoint Interception Alert Banner (2-Second Animated Warning) */}
+      {trafficAlertBanner && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+          <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-red-950/95 border-2 border-red-500 text-red-100 shadow-[0_0_35px_rgba(239,68,68,0.95)] backdrop-blur-md">
+            <div className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
+            <span className="font-mono font-black text-xs tracking-wider uppercase text-red-200">
+              [TRAFFIC CHOKEPOINT DETECTED]
+            </span>
+            <span className="text-[10px] font-mono text-amber-300 font-semibold border-l border-red-700/80 pl-2">
+              AUTOMATIC BYPASS ROUTE ENGAGED
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Floating Map Utility Bar: Style Switcher + 3D View + Traffic Toggle (Top Right) */}
       <div className="absolute top-18 right-20 z-10 pointer-events-auto flex items-center p-1 rounded-xl tactical-glass border border-slate-800/90 shadow-2xl backdrop-blur-md gap-2">

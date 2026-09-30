@@ -20,7 +20,7 @@ import {
   ROUTE_COORDS_AMB_01_INITIAL,
   ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
   ROUTE_COORDS_AMB_01_REROUTED_TO_MG_ROAD,
-  ROUTE_COORDS_EVAC_BURN_VICTORIA,
+  INDIRANAGAR_TO_VICTORIA_HOSPITAL,
 } from '../data/mockBengaluruState';
 
 const DEFAULT_WS_URL =
@@ -103,6 +103,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
@@ -115,6 +116,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
@@ -127,6 +129,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-02',
         hospitalId: 'HOSP-04',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_01_INITIAL,
         isPendingApproval: false,
@@ -199,6 +202,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
@@ -211,6 +215,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
@@ -223,6 +228,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-02',
         hospitalId: 'HOSP-04',
         type: 'CONGESTED_ORIGINAL',
+        legType: 'DISPATCH_LEG',
         coordinates: ROUTE_COORDS_AMB_01_INITIAL,
         isPendingApproval: false,
         isCongested: true,
@@ -236,6 +242,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-02',
         hospitalId: 'HOSP-04',
         type: 'DETOUR',
+        legType: 'DETOUR_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_01_TRAFFIC_DETOUR,
         isPendingApproval: false,
@@ -282,7 +289,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-TRIAGE-${Date.now()}`,
       timestamp,
       agentName: 'TRIAGE',
-      message: '[TRIAGE] Step 3: Units arrived on-scene at Indiranagar 100ft Rd. Patient stabilizing (4s timer)... Victim with 3rd-degree burns & smoke inhalation stabilized for emergency transport.',
+      message: '[TRIAGE] Patient stabilized. Evacuating to specialized hospital...',
       severity: 'WARN',
     };
 
@@ -374,7 +381,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
 
   /**
    * STEP 5: HOSPITAL EVACUATION (Leg 2 Transport)
-   * Generates new Leg 2 route polyline (Incident -> Hospital in Deep Cobalt Blue #2563eb)
+   * Generates new Leg 2 route polyline (Incident -> Hospital in Deep Cobalt Blue #2563eb with legType: 'HOSPITAL_LEG')
    * Vehicle status: EVACUATING_TO_HOSPITAL
    * Marks Leg 1 route as subtle faded historic trail
    */
@@ -389,8 +396,9 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-01',
         type: 'HOSPITAL_TRANSPORT',
+        legType: 'HOSPITAL_LEG',
         legNumber: 2,
-        coordinates: ROUTE_COORDS_EVAC_BURN_VICTORIA,
+        coordinates: INDIRANAGAR_TO_VICTORIA_HOSPITAL,
         isPendingApproval: false,
         color: '#2563eb', // Deep Cobalt Blue Leg 2
         label: 'AMB-03 Leg 2: Victoria Hospital Burn ICU Evacuation',
@@ -403,6 +411,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_FIRE_01,
         isPendingApproval: false,
@@ -415,6 +424,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         incidentId: 'INC-01',
         hospitalId: 'HOSP-03',
         type: 'DISPATCH',
+        legType: 'DISPATCH_LEG',
         legNumber: 1,
         coordinates: ROUTE_COORDS_AMB_03_FIRE,
         isPendingApproval: false,
@@ -468,7 +478,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-DELIVERED-${Date.now()}`,
       timestamp,
       agentName: 'COMMAND',
-      message: '[COMMAND AGENT] Step 6: Patient arrived at Victoria Hospital emergency bay. Bed allocated (Available beds: 14 -> 13). Clinical handover complete.',
+      message: '[COMMAND] Patient admitted to triage. Unit restocked and available.',
       severity: 'INFO',
     };
 
@@ -514,7 +524,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
       id: `LOG-AVAIL-${Date.now()}`,
       timestamp,
       agentName: 'COMMAND',
-      message: '[COMMAND AGENT] Patient safely admitted to Victoria Hospital (Burn ICU Hub) Emergency Triage. Unit AMB-03 restocked and AVAILABLE / READY for redeployment.',
+      message: '[COMMAND] Patient admitted to triage. Unit restocked and available.',
       severity: 'INFO',
     };
 

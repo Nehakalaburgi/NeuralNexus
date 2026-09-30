@@ -367,13 +367,13 @@ export function createResourceMarkerElement(
         resource.status === 'REROUTED'
           ? 'AI RECALCULATING: CHOKEPOINT AHEAD'
           : isOnScene
-          ? 'ON SCENE: STABILIZING PATIENT'
+          ? '[ON SCENE: STABILIZING PATIENT]'
           : isEvacuating
           ? `🚑 EVACUATING PATIENT -> ${targetHospName} (ETA: ${resource.currentEtaMinutes ?? 4.8} min)`
           : isDelivered
-          ? 'HANDED OVER - BEDS UPDATED'
+          ? '[AVAILABLE / READY]'
           : isResolved
-          ? 'IDLE / READY FOR DISPATCH'
+          ? '[AVAILABLE / READY]'
           : ''
       }
     </div>

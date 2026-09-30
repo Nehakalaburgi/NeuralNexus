@@ -217,6 +217,7 @@ export interface RouteGeometry {
   incidentId?: string;
   hospitalId?: string;
   type?: RouteType;
+  legType?: 'DISPATCH_LEG' | 'HOSPITAL_LEG' | 'DETOUR_LEG';
   coordinates: Coordinates[];
   isPendingApproval: boolean;
   color: string;
