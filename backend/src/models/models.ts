@@ -1,4 +1,4 @@
-import { Schema, model, models, Model } from "mongoose";
+import mongoose, { Schema, model, Model } from "mongoose";
 import { IIncident, IResource, IAssignment, IDecisionLog } from "./types.js";
 
 const IncidentSchema = new Schema<IIncident>(
@@ -48,7 +48,7 @@ const DecisionLogSchema = new Schema<IDecisionLog>(
     { timestamps: true }
 );
 
-export const IncidentModel = (models.Incident as Model<IIncident>) || model<IIncident>("Incident", IncidentSchema);
-export const ResourceModel = (models.Resource as Model<IResource>) || model<IResource>("Resource", ResourceSchema);
-export const AssignmentModel = (models.Assignment as Model<IAssignment>) || model<IAssignment>("Assignment", AssignmentSchema);
-export const DecisionLogModel = (models.DecisionLog as Model<IDecisionLog>) || model<IDecisionLog>("DecisionLog", DecisionLogSchema);
+export const IncidentModel = (mongoose.models?.Incident as Model<IIncident>) || model<IIncident>("Incident", IncidentSchema);
+export const ResourceModel = (mongoose.models?.Resource as Model<IResource>) || model<IResource>("Resource", ResourceSchema);
+export const AssignmentModel = (mongoose.models?.Assignment as Model<IAssignment>) || model<IAssignment>("Assignment", AssignmentSchema);
+export const DecisionLogModel = (mongoose.models?.DecisionLog as Model<IDecisionLog>) || model<IDecisionLog>("DecisionLog", DecisionLogSchema);
