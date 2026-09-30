@@ -85,10 +85,39 @@ export interface Incident {
   status: IncidentStatus;
   requiredResources: ResourceType[];
   assignedResourceId?: string;
+  assignedResourceIds?: string[];
   targetHospitalId?: string;
   reportedAt: string;
   description?: string;
 }
+
+/**
+ * Mapbox Visual Base Styles
+ */
+export type MapStyleId = 'dark' | 'satellite' | 'streets';
+
+/**
+ * Real-time Traffic Congestion Levels
+ */
+export type TrafficCongestionLevel = 'low' | 'moderate' | 'heavy' | 'severe';
+
+/**
+ * Traffic bottleneck corridor segment
+ */
+export interface TrafficSegment {
+  id: string;
+  name: string;
+  congestion: TrafficCongestionLevel;
+  coordinates: Coordinates[];
+  delayMinutes: number;
+  speedKmH: number;
+  description?: string;
+}
+
+/**
+ * Traffic status indicator on fleet resources
+ */
+export type UnitTrafficStatus = 'CLEAR' | 'BOTTLENECK' | 'REROUTED_BYPASS';
 
 /**
  * Emergency Fleet Vehicle / Unit Model
@@ -101,8 +130,12 @@ export interface Resource {
   location: GeoLocation;
   baseHospitalId?: string;
   currentEtaMinutes?: number;
+  distanceRemainingKm?: number;
   assignedIncidentId?: string;
   heading?: number;
+  trafficStatus?: UnitTrafficStatus;
+  trafficDelayMinutes?: number;
+  trafficSavingsMinutes?: number;
 }
 
 /**
@@ -119,15 +152,28 @@ export interface Hospital {
 }
 
 /**
+ * Emergency Route Segment Category
+ */
+export type RouteType = 'DISPATCH' | 'EVACUATION' | 'REROUTE' | 'DETOUR' | 'CONGESTED_ORIGINAL';
+
+/**
  * GeoJSON Polyline Route Geometry representation for Mapbox GL
  */
 export interface RouteGeometry {
   id: string;
-  resourceId: string;
-  incidentId: string;
+  resourceId?: string;
+  incidentId?: string;
+  hospitalId?: string;
+  type?: RouteType;
   coordinates: Coordinates[];
   isPendingApproval: boolean;
   color: string;
+  label?: string;
+  totalDistanceKm?: number;
+  distanceRemainingKm?: number;
+  currentEtaMinutes?: number;
+  isCongested?: boolean;
+  trafficWarning?: string;
 }
 
 /**
@@ -180,4 +226,6 @@ export interface WorldState {
   agentLogs: AgentLog[];
   pendingApproval: PendingApproval | null;
   metrics: WorldMetrics;
+  trafficSegments?: TrafficSegment[];
+  isTrafficCongested?: boolean;
 }

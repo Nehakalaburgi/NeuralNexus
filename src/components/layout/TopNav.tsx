@@ -1,7 +1,7 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
  * Top Navigation Header & Telemetry Dashboard Bar
- * Displays brand identity, live agent heartbeat, system metrics, and mock/live WS toggle.
+ * Displays brand identity, live agent heartbeat, system metrics, map style switcher, and mock/live WS toggle.
  */
 
 import React from 'react';
@@ -14,14 +14,22 @@ import {
   Cpu,
   Clock,
   RefreshCw,
+  Moon,
+  Satellite,
+  Map as MapIcon,
+  Activity,
 } from 'lucide-react';
-import { WorldState } from '../../types/emergency';
+import { WorldState, MapStyleId } from '../../types/emergency';
 
 export interface TopNavProps {
   worldState: WorldState;
   isMockMode: boolean;
   isConnected: boolean;
   lastHeartbeat: string | null;
+  activeMapStyle?: MapStyleId;
+  showTrafficOverlay?: boolean;
+  onSelectMapStyle?: (style: MapStyleId) => void;
+  onToggleTrafficOverlay?: () => void;
   onToggleMockMode: () => void;
   onResetState?: () => void;
 }
@@ -31,6 +39,10 @@ export const TopNav: React.FC<TopNavProps> = ({
   isMockMode,
   isConnected,
   lastHeartbeat,
+  activeMapStyle = 'dark',
+  showTrafficOverlay = true,
+  onSelectMapStyle,
+  onToggleTrafficOverlay,
   onToggleMockMode,
   onResetState,
 }) => {
@@ -74,7 +86,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       </div>
 
       {/* 2. System Status & Real-Time Pulse */}
-      <div className="hidden md:flex items-center gap-4">
+      <div className="hidden xl:flex items-center gap-4">
         {/* Heartbeat Badge */}
         <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold ${statusBadgeClass}`}>
           <span className={`w-2 h-2 rounded-full ${statusDotClass}`}></span>
@@ -105,10 +117,65 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
       </div>
 
-      {/* 3. Controls, WebSocket Indicator, & Mode Switcher */}
+      {/* 3. Controls, Map Style Switcher, WebSocket Indicator, & Mode Switcher */}
       <div className="flex items-center gap-3">
+        {/* Map Style Switcher Group */}
+        {onSelectMapStyle && (
+          <div className="hidden lg:flex items-center p-1 rounded-lg bg-slate-950/80 border border-slate-800 gap-1 text-[10px] font-mono font-bold">
+            <button
+              onClick={() => onSelectMapStyle('dark')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                activeMapStyle === 'dark'
+                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Moon className="w-3 h-3" />
+              <span>Dark</span>
+            </button>
+            <button
+              onClick={() => onSelectMapStyle('satellite')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                activeMapStyle === 'satellite'
+                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Satellite className="w-3 h-3" />
+              <span>Satellite</span>
+            </button>
+            <button
+              onClick={() => onSelectMapStyle('streets')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                activeMapStyle === 'streets'
+                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <MapIcon className="w-3 h-3" />
+              <span>Streets</span>
+            </button>
+          </div>
+        )}
+
+        {/* Traffic Overlay Toggle Button */}
+        {onToggleTrafficOverlay && (
+          <button
+            onClick={onToggleTrafficOverlay}
+            title="Toggle Real-Time Traffic Congestion Overlay"
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+              showTrafficOverlay
+                ? 'bg-orange-950/80 text-orange-300 border-orange-500/80 shadow-[0_0_10px_rgba(249,115,22,0.4)]'
+                : 'bg-slate-900/80 text-slate-500 border-slate-800 hover:text-slate-300'
+            }`}
+          >
+            <Activity className={`w-3 h-3 ${showTrafficOverlay ? 'text-orange-400 animate-pulse' : 'text-slate-500'}`} />
+            <span>TRAFFIC</span>
+          </button>
+        )}
+
         {/* Connection Status Pill */}
-        <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 text-slate-400">
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 text-slate-400">
           {isConnected ? (
             <>
               <Wifi className="w-3 h-3 text-emerald-400" />

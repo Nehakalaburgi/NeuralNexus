@@ -4,7 +4,7 @@
  * Integrates Mapbox GL canvas with floating tactical overlays, HITL approval gate, and simulation controls.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useEmergencyState } from './hooks/useEmergencyState';
 import { MapView } from './components/map/MapView';
 import { TopNav } from './components/layout/TopNav';
@@ -13,6 +13,7 @@ import { FleetDrawer } from './components/panels/FleetDrawer';
 import { AgentTelemetry } from './components/panels/AgentTelemetry';
 import { DemoControls } from './components/layout/DemoControls';
 import { ApprovalModal } from './components/modals/ApprovalModal';
+import { MapStyleId } from './types/emergency';
 
 export const App: React.FC = () => {
   const {
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
     lastHeartbeat,
     selectedIncidentId,
     selectedResourceId,
+    injectTrafficJam,
     injectDisruption,
     approveReallocation,
     rejectReallocation,
@@ -31,6 +33,13 @@ export const App: React.FC = () => {
     selectResource,
   } = useEmergencyState();
 
+  const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
+  const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
+
+  const toggleTrafficOverlay = () => {
+    setShowTrafficOverlay((prev) => !prev);
+  };
+
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#0b0f19] text-slate-100">
       {/* 1. Full-Screen Mapbox GL Geospatial Canvas (z-0) */}
@@ -38,6 +47,10 @@ export const App: React.FC = () => {
         worldState={worldState}
         selectedIncidentId={selectedIncidentId}
         selectedResourceId={selectedResourceId}
+        activeMapStyle={activeMapStyle}
+        showTrafficOverlay={showTrafficOverlay}
+        onSelectMapStyle={setActiveMapStyle}
+        onToggleTrafficOverlay={toggleTrafficOverlay}
         onSelectIncident={(incident) => selectIncident(incident.id)}
         onSelectResource={(resource) => selectResource(resource.id)}
       />
@@ -48,6 +61,10 @@ export const App: React.FC = () => {
         isMockMode={isMockMode}
         isConnected={isConnected}
         lastHeartbeat={lastHeartbeat}
+        activeMapStyle={activeMapStyle}
+        showTrafficOverlay={showTrafficOverlay}
+        onSelectMapStyle={setActiveMapStyle}
+        onToggleTrafficOverlay={toggleTrafficOverlay}
         onToggleMockMode={toggleMockMode}
         onResetState={resetState}
       />
@@ -56,6 +73,8 @@ export const App: React.FC = () => {
       <IncidentDrawer
         incidents={worldState.activeIncidents}
         hospitals={worldState.hospitals}
+        resources={worldState.resources}
+        routes={worldState.activeRoutes}
         selectedIncidentId={selectedIncidentId}
         onSelectIncident={(incident) => selectIncident(incident.id)}
       />
@@ -78,8 +97,10 @@ export const App: React.FC = () => {
       {/* 6. Bottom Floating Pitch Simulation Dock (z-20) */}
       <DemoControls
         systemStatus={worldState.systemStatus}
+        isTrafficCongested={worldState.isTrafficCongested}
         hasPendingApproval={worldState.pendingApproval !== null}
         onNormalIngestion={resetState}
+        onInjectTrafficJam={injectTrafficJam}
         onInjectDisruption={injectDisruption}
         onReset={resetState}
       />
