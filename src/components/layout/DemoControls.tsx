@@ -1,7 +1,7 @@
 /**
  * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
  * DemoControls: Floating Bottom Dock for Instant Hackathon Pitch Simulation Triggers
- * Allows seamless switching between Baseline Ingestion, Disruption Injection, and Grid Reset.
+ * Allows seamless switching between Baseline Ingestion, Disruption Injection, Grid Reset, and Vehicle Speed.
  */
 
 import React from 'react';
@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Sliders,
   AlertTriangle,
+  Gauge,
 } from 'lucide-react';
 import { SystemStatus } from '../../types/emergency';
 
@@ -18,6 +19,8 @@ export interface DemoControlsProps {
   systemStatus: SystemStatus;
   isTrafficCongested?: boolean;
   hasPendingApproval: boolean;
+  simulationSpeed?: number;
+  onSpeedChange?: (speed: number) => void;
   onNormalIngestion: () => void;
   onInjectTrafficJam: () => void;
   onInjectDisruption: () => void;
@@ -28,6 +31,8 @@ export const DemoControls: React.FC<DemoControlsProps> = ({
   systemStatus,
   isTrafficCongested = false,
   hasPendingApproval,
+  simulationSpeed = 1,
+  onSpeedChange,
   onNormalIngestion,
   onInjectTrafficJam,
   onInjectDisruption,
@@ -97,8 +102,29 @@ export const DemoControls: React.FC<DemoControlsProps> = ({
           <RotateCcw className="w-3.5 h-3.5" />
           <span className="hidden md:inline">Reset</span>
         </button>
+
+        {/* 5. Speed Control Tab */}
+        <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+          <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 text-[10px] font-mono text-slate-400 font-bold uppercase">
+            <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline text-slate-300">SPEED:</span>
+          </div>
+          {[0.5, 1, 2, 4].map((speed) => (
+            <button
+              key={speed}
+              onClick={() => onSpeedChange?.(speed)}
+              title={`Simulate vehicle velocity at ${speed}x real-time`}
+              className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all duration-200 cursor-pointer border ${
+                simulationSpeed === speed
+                  ? 'bg-cyan-950 text-cyan-300 border-cyan-400/90 shadow-[0_0_12px_rgba(6,182,212,0.45)]'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              {speed}x
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
-

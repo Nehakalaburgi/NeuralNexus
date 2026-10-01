@@ -43,6 +43,7 @@ export interface MapViewProps {
   worldState: WorldState;
   selectedIncidentId?: string | null;
   selectedResourceId?: string | null;
+  simulationSpeed?: number;
   activeMapStyle?: MapStyleId;
   showTrafficOverlay?: boolean;
   onSelectMapStyle?: (style: MapStyleId) => void;
@@ -77,6 +78,7 @@ export const MapView: React.FC<MapViewProps> = ({
   worldState,
   selectedIncidentId,
   selectedResourceId,
+  simulationSpeed = 1,
   activeMapStyle: externalMapStyle,
   showTrafficOverlay: externalShowTraffic,
   onSelectMapStyle: externalOnSelectMapStyle,
@@ -129,6 +131,12 @@ export const MapView: React.FC<MapViewProps> = ({
   const unitPauseTimerRef = useRef<Record<string, number>>({});
   const animationFrameRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(performance.now());
+
+  // Simulation speed reference for live 60fps velocity scaling
+  const simulationSpeedRef = useRef<number>(simulationSpeed);
+  useEffect(() => {
+    simulationSpeedRef.current = simulationSpeed;
+  }, [simulationSpeed]);
 
   /**
    * 1. Initialize Mapbox GL Instance
@@ -358,7 +366,8 @@ export const MapView: React.FC<MapViewProps> = ({
         // Units with smaller ETAs move proportionally faster and arrive sooner than distant units!
         const baseEtaMinutes = resource.currentEtaMinutes ?? 4.0;
         const totalTripDurationSec = Math.max(10, baseEtaMinutes * 6.0);
-        const speedProgressPerSec = 1 / totalTripDurationSec;
+        const speedMultiplier = Math.max(0, simulationSpeedRef.current ?? 1.0);
+        const speedProgressPerSec = (1 / totalTripDurationSec) * speedMultiplier;
 
         let currentProgress = unitProgressRef.current[resource.id] ?? 0;
         const currentPause = unitPauseTimerRef.current[resource.id] ?? 0;
@@ -366,7 +375,7 @@ export const MapView: React.FC<MapViewProps> = ({
         if (currentProgress >= 1.0) {
           // Unit reached scene: pause on scene for 3.0 seconds to simulate scene arrival / triage
           if (currentPause < 3.0) {
-            unitPauseTimerRef.current[resource.id] = currentPause + deltaSec;
+            unitPauseTimerRef.current[resource.id] = currentPause + deltaSec * speedMultiplier;
             currentProgress = 1.0;
           } else {
             // Restart loop smoothly from staging base

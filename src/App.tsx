@@ -46,6 +46,7 @@ export const App: React.FC = () => {
 
   const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
   const [showTrafficOverlay, setShowTrafficOverlay] = useState<boolean>(true);
+  const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
 
   const toggleTrafficOverlay = () => {
     setShowTrafficOverlay((prev) => !prev);
@@ -58,6 +59,7 @@ export const App: React.FC = () => {
         worldState={worldState}
         selectedIncidentId={selectedIncidentId}
         selectedResourceId={selectedResourceId}
+        simulationSpeed={simulationSpeed}
         activeMapStyle={activeMapStyle}
         showTrafficOverlay={showTrafficOverlay}
         onSelectMapStyle={setActiveMapStyle}
@@ -110,6 +112,8 @@ export const App: React.FC = () => {
         systemStatus={worldState.systemStatus}
         isTrafficCongested={worldState.isTrafficCongested}
         hasPendingApproval={worldState.pendingApproval !== null}
+        simulationSpeed={simulationSpeed}
+        onSpeedChange={setSimulationSpeed}
         onNormalIngestion={resetState}
         onInjectTrafficJam={injectTrafficJam}
         onInjectDisruption={injectDisruption}
