@@ -1,14 +1,7 @@
 {
-  "name": "@neuralnexus/shared",
+  "name": "@shared/emergency",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.0"
-  }
+  "main": "src/emergency.ts",
+  "types": "src/emergency.ts"
 }

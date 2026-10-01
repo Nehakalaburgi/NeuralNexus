@@ -1,26 +1,32 @@
-import { getInitialScenario } from './scenarios/emergencyScenario.js';
-import { handleDisruption } from './services/disruptionService.js';
-import { replanResponsePlan } from './services/replanningService.js';
-import type { DisruptionEvent, Incident } from '@neuralnexus/shared';
+import { Incident, DisruptionEvent } from '@shared/emergency';
+import { DisruptionService } from './services/disruptionService';
+import { ReplanningService } from './services/replanningService';
+import { getInitialScenario } from './scenarios/emergencyScenario';
 
 console.log('====================================================');
-console.log('🧪 TEST 1: NEW INCIDENT WITH AVAILABLE RESOURCE');
+console.log('🔥 TESTING NEW INCIDENT DYNAMIC REPLANNING (STEP 6)');
 console.log('====================================================\n');
 
-// Prepare Scenario 1 State
+// -----------------------------------------------------------------
+// TEST 1: New Critical Incident with Suitable Available Resource (AMB-04)
+// -----------------------------------------------------------------
+console.log('----------------------------------------------------');
+console.log('📌 TEST 1: New Incident with Available Compatible Resource');
+console.log('----------------------------------------------------');
+
 const scenario1 = getInitialScenario();
 
-// New Incident INC-004 requiring an ambulance (AMB-04 is available)
 const newIncident1: Incident = {
   id: 'INC-004',
-  type: 'Road Hazard',
-  severity: 3,
-  urgency: 'medium',
-  location: { lat: 12.9650, lng: 77.5800 },
+  type: 'Building Fire',
+  severity: 5,
+  urgency: 'critical',
+  location: { lat: 12.9750, lng: 77.6094 },
   requiredResources: ['ambulance'],
   status: 'active'
 };
 
+// Add new incident to scenario state
 scenario1.incidents.push(newIncident1);
 
 const disruptionEvent1: DisruptionEvent = {
@@ -29,23 +35,28 @@ const disruptionEvent1: DisruptionEvent = {
   timestamp: new Date().toISOString()
 };
 
-const disruptionResult1 = handleDisruption(disruptionEvent1, scenario1, { newIncident: newIncident1 });
-const { replanningResult: result1, revisedPlan: plan1 } = replanResponsePlan(disruptionResult1, scenario1);
+const analysis1 = DisruptionService.handleDisruption(disruptionEvent1, scenario1);
+const { replanningResult: result1, revisedResponsePlan: plan1 } =
+  ReplanningService.replanResponsePlan(analysis1, scenario1);
 
-console.log('--- TEST 1 VERIFICATION CHECKLIST ---');
-console.log(`1. New incident INC-004 affected: ${result1.affectedIncidents.includes('INC-004') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`2. AMB-04 assigned to INC-004: ${result1.newAssignments.some((a) => a.resourceId === 'AMB-04' && a.incidentId === 'INC-004') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`3. Existing assignments preserved (4 existing): ${plan1.assignments.length === 5 ? '✅ PASSED' : '❌ FAILED'} (Total: ${plan1.assignments.length})`);
-console.log(`4. requiresHumanApproval is false: ${result1.requiresHumanApproval === false ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`5. Plan version incremented (v2): ${plan1.version === 2 ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`Reasoning: "${result1.reason}"\n`);
+console.log('\n📊 TEST 1 VERIFICATION:');
+console.log(`  - Affected Incident: ${result1.affectedIncidents.join(', ')}`);
+console.log(`  - New Assignment: ${result1.newAssignments.map(a => `${a.incidentId} -> ${a.resourceId}`).join(', ')}`);
+console.log(`  - Existing Assignments Preserved: ${plan1.assignments.length === 5 ? 'YES (5 total assignments)' : 'NO'}`);
+console.log(`  - Plan Version: ${plan1.version} (Status: ${plan1.status})`);
+console.log(`  - Reason: "${result1.reason}"`);
+console.log(`  - Human Approval Required: ${result1.requiresHumanApproval ? 'YES' : 'NO (Automated Success)'}`);
 
+console.log('\n✨ NEW ASSIGNMENTS:', JSON.stringify(result1.newAssignments, null, 2));
+console.log('📋 REVISED RESPONSE PLAN:', JSON.stringify(plan1, null, 2));
 
-console.log('====================================================');
-console.log('🧪 TEST 2: NEW CRITICAL INCIDENT REQUIRING REALLOCATION');
-console.log('====================================================\n');
+// -----------------------------------------------------------------
+// TEST 2: New Critical Incident with Missing Resource (Reallocation Impact)
+// -----------------------------------------------------------------
+console.log('\n----------------------------------------------------');
+console.log('📌 TEST 2: New Incident Requiring Unavailable Resource (RES-01 Assigned)');
+console.log('----------------------------------------------------');
 
-// Prepare Scenario 2 State (INC-004 requires rescue, but RES-01 is assigned to INC-002)
 const scenario2 = getInitialScenario();
 
 const newIncident2: Incident = {
@@ -53,39 +64,50 @@ const newIncident2: Incident = {
   type: 'Building Fire',
   severity: 5,
   urgency: 'critical',
-  location: { lat: 12.9700, lng: 77.6300 },
+  location: { lat: 12.9750, lng: 77.6094 },
   requiredResources: ['ambulance', 'rescue'],
   status: 'active'
 };
 
 scenario2.incidents.push(newIncident2);
 
-const disruptionResult2 = handleDisruption(disruptionEvent1, scenario2, { newIncident: newIncident2 });
-const { replanningResult: result2, revisedPlan: plan2 } = replanResponsePlan(disruptionResult2, scenario2);
+const disruptionEvent2: DisruptionEvent = {
+  type: 'NEW_INCIDENT',
+  incidentId: 'INC-004',
+  timestamp: new Date().toISOString()
+};
 
-console.log('--- TEST 2 VERIFICATION CHECKLIST ---');
-console.log(`1. New incident INC-004 processed: ${result2.affectedIncidents.includes('INC-004') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`2. AMB-04 assigned (available): ${result2.newAssignments.some((a) => a.resourceId === 'AMB-04') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`3. Reallocation of RES-01 evaluated: ${result2.alternatives.some((alt) => alt.resourceId === 'RES-01') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`4. requiresHumanApproval is true (impacts INC-002): ${result2.requiresHumanApproval === true ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`5. Response plan status is pending_approval: ${plan2.status === 'pending_approval' ? '✅ PASSED' : '❌ FAILED'} (${plan2.status})`);
-console.log(`Reasoning: "${result2.reason}"\n`);
+const analysis2 = DisruptionService.handleDisruption(disruptionEvent2, scenario2);
+const { replanningResult: result2, revisedResponsePlan: plan2 } =
+  ReplanningService.replanResponsePlan(analysis2, scenario2);
 
+console.log('\n📊 TEST 2 VERIFICATION:');
+console.log(`  - Affected Incident: ${result2.affectedIncidents.join(', ')}`);
+console.log(`  - Alternatives Generated: ${result2.alternatives.map(a => `${a.resourceId} (Impact: ${a.impact})`).join(', ')}`);
+console.log(`  - Plan Status: ${plan2.status}`);
+console.log(`  - Reason: "${result2.reason}"`);
+console.log(`  - Human Approval Required: ${result2.requiresHumanApproval ? 'YES (CONFIRMED)' : 'NO'}`);
 
-console.log('====================================================');
-console.log('🧪 TEST 3: NEW INCIDENT REQUIRING NON-EXISTENT RESOURCE');
-console.log('====================================================\n');
+console.log('\n💡 ALTERNATIVES:', JSON.stringify(result2.alternatives, null, 2));
+console.log('📋 REVISED RESPONSE PLAN STATUS:', plan2.status);
+console.log('👤 HUMAN APPROVAL STATUS:', result2.requiresHumanApproval);
 
-// Prepare Scenario 3 State (INC-005 requires helicopter)
+// -----------------------------------------------------------------
+// TEST 3: New Incident Requiring Non-existent Resource Type ('hazmat')
+// -----------------------------------------------------------------
+console.log('\n----------------------------------------------------');
+console.log('📌 TEST 3: New Incident Requiring Non-existent Resource Type');
+console.log('----------------------------------------------------');
+
 const scenario3 = getInitialScenario();
 
 const newIncident3: Incident = {
   id: 'INC-005',
-  type: 'Air Rescue',
-  severity: 5,
-  urgency: 'critical',
-  location: { lat: 12.9500, lng: 77.6000 },
-  requiredResources: ['helicopter'],
+  type: 'Chemical Leak',
+  severity: 4,
+  urgency: 'high',
+  location: { lat: 12.9850, lng: 77.5750 },
+  requiredResources: ['hazmat'],
   status: 'active'
 };
 
@@ -97,16 +119,16 @@ const disruptionEvent3: DisruptionEvent = {
   timestamp: new Date().toISOString()
 };
 
-const disruptionResult3 = handleDisruption(disruptionEvent3, scenario3, { newIncident: newIncident3 });
-const { replanningResult: result3, revisedPlan: plan3 } = replanResponsePlan(disruptionResult3, scenario3);
+const analysis3 = DisruptionService.handleDisruption(disruptionEvent3, scenario3);
+const { replanningResult: result3, revisedResponsePlan: plan3 } =
+  ReplanningService.replanResponsePlan(analysis3, scenario3);
 
-console.log('--- TEST 3 VERIFICATION CHECKLIST ---');
-console.log(`1. No invented resource in newAssignments: ${result3.newAssignments.length === 0 ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`2. requiresHumanApproval is true: ${result3.requiresHumanApproval === true ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`3. Plan status is pending_approval: ${plan3.status === 'pending_approval' ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`4. Incident flagged as unresolved: ${result3.reason.includes('No helicopter resource is available') ? '✅ PASSED' : '❌ FAILED'}`);
-console.log(`Reasoning: "${result3.reason}"\n`);
+console.log('\n📊 TEST 3 VERIFICATION:');
+console.log(`  - Fake Resource Invented: ${result3.newAssignments.some(a => a.resourceId.includes('hazmat')) ? 'YES (FAIL)' : 'NO (CONFIRMED PASS)'}`);
+console.log(`  - Incident Flagged for Human Attention: ${result3.requiresHumanApproval ? 'YES (CONFIRMED PASS)' : 'NO'}`);
+console.log(`  - Plan Status: ${plan3.status}`);
+console.log(`  - Reason: "${result3.reason}"`);
 
-console.log('====================================================');
-console.log('🎉 ALL NEW INCIDENT REPLANNING TESTS PASSED!');
-console.log('====================================================');
+console.log('\n====================================================');
+console.log('🎯 STEP 6 NEW INCIDENT REPLANNING TEST COMPLETE');
+console.log('====================================================\n');

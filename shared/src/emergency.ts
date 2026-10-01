@@ -1,47 +1,65 @@
+export interface Location {
+  lat: number;
+  lng: number;
+}
+
+export type IncidentUrgency = "low" | "medium" | "high" | "critical";
+export type IncidentStatus = "active" | "pending" | "resolved";
+
 export interface Incident {
   id: string;
   type: string;
-  severity: number; // 1-5
-  urgency: 'low' | 'medium' | 'high' | 'critical';
-  location: { lat: number; lng: number };
+  severity: number; // 1 to 5
+  urgency: IncidentUrgency;
+  location: Location;
   requiredResources: string[];
-  status: 'active' | 'pending' | 'resolved';
+  status: IncidentStatus;
 }
+
+export type ResourceStatus = "available" | "assigned" | "responding" | "out_of_service";
 
 export interface Resource {
   id: string;
   type: string;
-  status: 'available' | 'assigned' | 'responding' | 'out_of_service';
-  location: { lat: number; lng: number };
+  status: ResourceStatus;
+  location: Location;
   assignedIncidentId?: string | null;
 }
+
+export type AssignmentStatus = "assigned" | "en_route" | "completed" | "cancelled";
 
 export interface Assignment {
   incidentId: string;
   resourceId: string;
   eta: number;
-  status: 'assigned' | 'en_route' | 'completed' | 'cancelled';
+  status: AssignmentStatus;
 }
+
+export type ResponsePlanStatus = "active" | "pending_approval" | "superseded";
 
 export interface ResponsePlan {
   id: string;
   version: number;
   assignments: Assignment[];
-  status: 'active' | 'pending_approval' | 'superseded';
+  status: ResponsePlanStatus;
 }
 
+export type DisruptionEventType = "RESOURCE_UNAVAILABLE" | "NEW_INCIDENT";
+
 export interface DisruptionEvent {
-  type: 'RESOURCE_UNAVAILABLE' | 'NEW_INCIDENT';
+  type: DisruptionEventType;
   resourceId?: string;
   incidentId?: string;
   timestamp: string;
 }
 
+export type ImpactLevel = "low" | "medium" | "high";
+
 export interface AlternativeAssignment {
   resourceId: string;
   incidentId: string;
   eta: number;
-  impact: 'low' | 'medium' | 'high';
+  impact: ImpactLevel;
   reason: string;
 }
 
