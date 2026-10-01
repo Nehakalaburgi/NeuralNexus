@@ -163,24 +163,6 @@ export const MapView: React.FC<MapViewProps> = ({
     mapRef.current = map;
     currentAppliedStyleRef.current = currentMapStyle;
 
-    // Tactical navigation controls (bottom-right)
-    map.addControl(
-      new mapboxgl.NavigationControl({
-        showCompass: true,
-        showZoom: true,
-        visualizePitch: true,
-      }),
-      'bottom-right'
-    );
-
-    map.addControl(
-      new mapboxgl.ScaleControl({
-        maxWidth: 120,
-        unit: 'metric',
-      }),
-      'bottom-left'
-    );
-
     map.on('load', () => {
       // Synchronize traffic overlay and routes on map load
       initTrafficLayers(map, showTraffic, worldState.trafficSegments ?? BENGALURU_DEFAULT_TRAFFIC_CORRIDORS);
@@ -513,95 +495,9 @@ export const MapView: React.FC<MapViewProps> = ({
       {/* Grid Scanline Overlay for Cybernetic Tactical Command Room Aesthetic */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(11,15,25,0.4)_100%)] z-1" />
 
-      {/* Floating Map Utility Bar: Style Switcher + Traffic Toggle (Top Right) */}
-      <div className="absolute top-18 right-20 z-10 pointer-events-auto flex items-center p-1 tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-2xl gap-2">
-        {/* Style Switcher Group */}
-        <div className="flex items-center gap-1">
-          <div className="px-2 py-1 text-[9px] font-mono text-[#7A8394] font-bold uppercase hidden sm:flex items-center gap-1 border-r border-[#1E2532] mr-1">
-            <Layers className="w-3 h-3 text-[#00F0FF]" />
-            <span>STYLE:</span>
-          </div>
-          {(['dark', 'satellite', 'streets'] as const).map((styleKey) => {
-            const style = MAPBOX_STYLES[styleKey];
-            const isActive = currentMapStyle === styleKey;
 
-            return (
-              <button
-                key={styleKey}
-                onClick={() => handleStyleChange(styleKey)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all duration-150 cursor-pointer border ${
-                  isActive
-                    ? 'bg-[#00F0FF] text-[#0A0C10] font-black border-[#00F0FF] shadow-[0_0_10px_rgba(0,240,255,0.4)]'
-                    : 'bg-[#0D1017] text-[#7A8394] hover:text-[#EDECE8] border-[#1E2532] hover:bg-[#13171F]'
-                }`}
-              >
-                {style.icon}
-                <span>{style.label}</span>
-              </button>
-            );
-          })}
-        </div>
 
-        <div className="w-px h-5 bg-[#1E2532]" />
 
-        {/* Traffic Overlay Toggle Button */}
-        <button
-          onClick={toggleTraffic}
-          title="Toggle Real-Time Traffic Congestion Layer"
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all duration-150 cursor-pointer border ${
-            showTraffic
-              ? 'bg-[#1f1105] text-[#FFA94D] border-[#FF6B00]/70'
-              : 'bg-[#0D1017] text-[#7A8394] hover:text-[#EDECE8] border-[#1E2532]'
-          }`}
-        >
-          <Activity className={`w-3.5 h-3.5 ${showTraffic ? 'text-[#FF6B00] animate-pulse' : 'text-[#7A8394]'}`} />
-          <span>TRAFFIC: {showTraffic ? 'ON' : 'OFF'}</span>
-        </button>
-      </div>
-
-      {/* Tactical Route Network Legend Overlay (Top Left below Nav) */}
-      <div className="absolute top-18 left-16 z-10 pointer-events-none hidden md:flex flex-col gap-1.5 p-2.5 tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-xl max-w-[320px]">
-        <div className="text-[9.5px] font-mono font-bold text-[#EDECE8] uppercase tracking-wider flex items-center justify-between border-b border-[#1E2532] pb-1">
-          <span className="font-display">FLEET CORRIDOR MATRIX</span>
-          <span className="text-[#00F0FF] text-[8.5px]">60 FPS</span>
-        </div>
-        <div className="space-y-1 text-[9px] font-mono">
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-1 bg-[#2563EB]" />
-            <span className="text-[#93C5FD]">TRAVELED PATH [SOLID BLUE]</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-0.5 border-t border-dashed border-[#60A5FA]" />
-            <span className="text-[#93C5FD]">UPCOMING PATH [DASHED]</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-1 bg-[#3B82F6]" />
-            <span className="text-[#93C5FD]">AMBULANCE RESPONSE CORRIDOR</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-1 bg-[#2563EB]" />
-            <span className="text-[#93C5FD]">FIRE ENGINE CORRIDOR</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-1 bg-[#FF2A3B] animate-pulse" />
-            <span className="text-[#FF6B6B] font-bold">GRIDLOCK CORRIDOR [RED]</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-0.5 border-t border-dashed border-[#00F0FF]" />
-            <span className="text-[#00F0FF]">TRAUMA EVACUATION CORRIDOR</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#A0AAB8]">
-            <span className="w-4 h-0.5 border-t border-dashed border-[#F59E0B]" />
-            <span className="text-[#FCD34D]">REALLOCATION DIVERSION</span>
-          </div>
-          {showTraffic && (
-            <div className="flex items-center gap-2 text-[#A0AAB8] pt-1 border-t border-[#1E2532]">
-              <span className="w-4 h-1 bg-[#FF2A3B]" />
-              <span className="text-[#FF6B6B]">REAL-TIME BOTTLENECK OVERLAY</span>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Missing Mapbox Token Fallback Overlay */}
       {isTokenMissing && (

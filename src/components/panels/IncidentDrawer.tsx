@@ -121,14 +121,14 @@ export const IncidentDrawer: React.FC<IncidentDrawerProps> = ({
     <aside
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed left-4 top-18 bottom-6 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
+      className={`fixed left-4 top-20 bottom-6 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
         isHovered ? 'w-[410px]' : 'w-12'
       }`}
     >
       <div className="w-full h-full tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-2xl overflow-hidden flex flex-col">
         {/* Collapsed Indicator Strip */}
         {!isHovered && (
-          <div className="w-full h-full py-4 flex flex-col items-center justify-between text-[#7A8394] cursor-pointer">
+          <div className="w-full h-full py-3.5 flex flex-col items-center justify-between text-[#7A8394] cursor-pointer">
             <div className="flex flex-col items-center gap-2">
               <div className="relative p-2 bg-[#1A0A0D] border border-[#FF2A3B]/60 text-[#FF2A3B]">
                 <ShieldAlert className="w-4 h-4" />
@@ -144,15 +144,21 @@ export const IncidentDrawer: React.FC<IncidentDrawerProps> = ({
             </div>
 
             {/* Severity Status Indicators */}
-            <div className="flex flex-col items-center gap-1.5 py-4">
+            <div className="flex flex-col items-center gap-1.5 py-2">
               {criticalCount > 0 && <span className="w-1.5 h-1.5 bg-[#FF2A3B] animate-ping" />}
               {urgentCount > 0 && <span className="w-1.5 h-1.5 bg-[#F59E0B]" />}
               <span className="w-1.5 h-1.5 bg-[#00F0FF]" />
             </div>
 
-            <div className="writing-mode-vertical text-[9px] font-mono font-bold tracking-widest text-[#7A8394] uppercase flex items-center gap-1 rotate-180">
-              <span>DISPATCH // INCIDENTS</span>
-              <ChevronRight className="w-3 h-3 text-[#00F0FF]" />
+            {/* Clean Upright Vertical Label */}
+            <div className="flex-1 flex flex-col items-center justify-center my-2 overflow-hidden">
+              <span className="[writing-mode:vertical-rl] text-[10px] font-mono font-bold tracking-[0.25em] text-[#7A8394] uppercase whitespace-nowrap">
+                INCIDENTS // QUEUE
+              </span>
+            </div>
+
+            <div className="p-1 text-[#00F0FF]">
+              <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </div>
         )}

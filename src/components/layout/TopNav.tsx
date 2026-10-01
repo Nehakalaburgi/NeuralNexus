@@ -65,7 +65,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-[#0A0C10]/95 backdrop-blur-md border-b border-[#1E2532] flex items-center justify-between px-4 pointer-events-auto select-none">
+    <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-[#0A0C10]/95 backdrop-blur-md border-b border-[#1E2532] flex items-center justify-between px-5 pointer-events-auto select-none">
       {/* 1. Monolithic Brand & Grid Coordinate */}
       <div className="flex items-center gap-3.5">
         <div className="relative w-9 h-9 flex items-center justify-center bg-[#13171F] border border-[#1E2532]">
