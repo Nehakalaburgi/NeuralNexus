@@ -43,7 +43,7 @@ export const DemoControls: React.FC<DemoControlsProps> = ({
   const isNormal = systemStatus === 'ONLINE' && !isTrafficActive;
 
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto select-none">
+    <div className="fixed bottom-5 left-1/2 -translate-x-[70%] z-20 pointer-events-auto select-none transition-all duration-200">
       <div className="tactical-surface-glass border border-[#1E2532] shadow-[0_12px_40px_rgba(0,0,0,0.85)] flex items-stretch p-1 gap-1.5 corner-crosshair">
         {/* Switchboard Console Label */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0A0C10] border border-[#1E2532] text-[10px] font-mono font-bold text-[#7A8394] tracking-widest uppercase">
