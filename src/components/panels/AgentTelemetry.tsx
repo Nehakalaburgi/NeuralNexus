@@ -71,55 +71,70 @@ export const AgentTelemetry: React.FC<AgentTelemetryProps> = ({ logs, systemStat
     return log.agentName === selectedAgentFilter;
   });
 
+  const getAgentFilterLabel = (agent: AgentName | 'ALL') => {
+    switch (agent) {
+      case 'ALL':
+        return 'ALL';
+      case 'TRIAGE':
+        return 'TRI';
+      case 'LOGISTICS':
+        return 'LOG';
+      case 'ALLOCATION':
+        return 'ALC';
+      case 'COMMAND':
+        return 'CMD';
+    }
+  };
+
   return (
     <div
-      className={`fixed right-4 bottom-4 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out w-[460px] ${
-        isCollapsed ? 'h-11' : 'h-56'
+      className={`fixed right-4 bottom-4 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out w-[480px] ${
+        isCollapsed ? 'h-9' : 'h-56'
       }`}
     >
       <div className="w-full h-full tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-2xl flex flex-col overflow-hidden">
         {/* Terminal Header Bar */}
-        <div className="h-10 px-3 bg-[#0A0C10]/95 border-b border-[#1E2532] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-[#13171F] border border-[#1E2532] text-[#00F0FF]">
-              <Terminal className="w-3.5 h-3.5" />
+        <div className="h-9 px-2.5 bg-[#0A0C10]/95 border-b border-[#1E2532] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="p-1 bg-[#13171F] border border-[#1E2532] text-[#00F0FF] shrink-0">
+              <Terminal className="w-3 h-3" />
             </div>
-            <span className="font-display text-xs font-bold text-[#EDECE8] tracking-wider uppercase">
+            <span className="font-mono text-[11px] font-bold text-[#EDECE8] tracking-wider uppercase whitespace-nowrap">
               AGENT TELEMETRY
             </span>
             <span
-              className={`flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 border ${
+              className={`flex items-center gap-1 text-[8.5px] font-mono px-1.5 py-0.5 border whitespace-nowrap shrink-0 ${
                 systemStatus === 'DISRUPTED'
                   ? 'text-[#FF2A3B] border-[#FF2A3B]/60 bg-[#FF2A3B]/10'
                   : 'text-[#00F0FF] border-[#00F0FF]/40 bg-[#00F0FF]/10'
               }`}
             >
               <span
-                className={`w-1.5 h-1.5 ${
+                className={`w-1.5 h-1.5 shrink-0 ${
                   systemStatus === 'DISRUPTED'
                     ? 'bg-[#FF2A3B] animate-ping'
                     : 'bg-[#00F0FF] animate-pulse'
                 }`}
               />
-              {systemStatus === 'DISRUPTED' ? 'REASSESSING' : 'FEED ACTIVE'}
+              {systemStatus === 'DISRUPTED' ? 'REASSESSING' : 'LIVE'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Filter Toggle */}
             {!isCollapsed && (
-              <div className="flex items-center gap-0.5 text-[9px] font-mono bg-[#0D1017] p-0.5 border border-[#1E2532]">
+              <div className="flex items-center gap-0.5 text-[8.5px] font-mono bg-[#0D1017] p-0.5 border border-[#1E2532]">
                 {(['ALL', 'TRIAGE', 'LOGISTICS', 'ALLOCATION', 'COMMAND'] as const).map((agent) => (
                   <button
                     key={agent}
                     onClick={() => setSelectedAgentFilter(agent)}
-                    className={`px-1.5 py-0.5 cursor-pointer uppercase transition-all ${
+                    className={`px-1.5 py-0.5 cursor-pointer uppercase transition-all whitespace-nowrap ${
                       selectedAgentFilter === agent
                         ? 'bg-[#00F0FF] text-[#0A0C10] font-black shadow-[0_0_8px_rgba(0,240,255,0.4)]'
                         : 'text-[#7A8394] hover:text-[#EDECE8]'
                     }`}
                   >
-                    {agent === 'ALL' ? 'ALL' : agent.slice(0, 3)}
+                    {getAgentFilterLabel(agent)}
                   </button>
                 ))}
               </div>
@@ -128,7 +143,7 @@ export const AgentTelemetry: React.FC<AgentTelemetryProps> = ({ logs, systemStat
             {/* Collapse/Expand Toggle */}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 hover:bg-[#1E2532] text-[#7A8394] hover:text-[#EDECE8] transition-colors cursor-pointer"
+              className="p-1 hover:bg-[#1E2532] text-[#7A8394] hover:text-[#EDECE8] transition-colors cursor-pointer shrink-0"
             >
               {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
