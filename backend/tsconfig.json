@@ -10,7 +10,9 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@neuralnexus/shared": ["../shared/dist/index.d.ts"]
+      "@neuralnexus/shared": ["../shared/src/index", "../shared/dist/index.d.ts"],
+      "@shared/*": ["../shared/src/*", "../shared/*"],
+      "@shared/emergency": ["../shared/src/emergency"]
     }
   },
   "include": ["src/**/*"]

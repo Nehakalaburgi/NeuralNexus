@@ -7,9 +7,21 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "demo:replan": "tsx src/replanning/demoReplanning.ts",
+    "test:replan": "tsx src/replanning/testSuite.ts",
+    "test:scenario": "tsx src/scenarios/testScenario.ts",
+    "test:disruption": "tsx src/services/testDisruptionService.ts",
+    "test:disruption:single": "tsx src/testDisruption.ts",
+    "test:replanning:single": "tsx src/testReplanning.ts",
+    "test:replanning:verification": "tsx src/testReplanningVerification.ts",
+    "test:newincident": "tsx src/testNewIncident.ts",
+    "test:decisionlog": "tsx src/testDecisionLog.ts",
+    "test:ai": "tsx src/testAiPipeline.ts",
+    "test:integration": "tsx src/testIntegrationEngine.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

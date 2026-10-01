@@ -1,137 +1,146 @@
-import type { DisruptionEvent, Resource, Assignment, Incident, ResponsePlan } from '@neuralnexus/shared';
-import { defaultStateProvider, type StateProvider } from './stateProvider.js';
+import {
+  DisruptionEvent,
+  Incident,
+  Resource,
+  Assignment
+} from '@shared/emergency';
+import {
+  getIncidents,
+  getResources,
+  getAssignments
+} from '../scenarios/emergencyScenario';
 
 export interface DisruptionAnalysisResult {
   disruption: DisruptionEvent;
-  affectedResource?: Resource;
+  affectedResource?: Resource | null;
   affectedAssignments: Assignment[];
   affectedIncidents: string[];
-  newIncident?: Incident;
   replanningRequired: boolean;
 }
 
-export interface ScenarioState {
+export interface DisruptionStateContext {
   incidents: Incident[];
   resources: Resource[];
   assignments: Assignment[];
-  responsePlan?: ResponsePlan;
 }
 
 /**
- * Helper to resolve a ScenarioState object from either a raw state or a StateProvider.
+ * DisruptionService for NeuralNexus Dynamic Replanning & Integration Module
+ * Receives disruption events and analyzes the impact on current emergency response state.
  */
-const resolveState = (stateOrProvider?: ScenarioState | StateProvider): ScenarioState => {
-  if (!stateOrProvider) {
-    return defaultStateProvider.getState();
-  }
-  if ('getState' in stateOrProvider && typeof stateOrProvider.getState === 'function') {
-    return stateOrProvider.getState();
-  }
-  return stateOrProvider as ScenarioState;
-};
+export class DisruptionService {
+  /**
+   * Main entry point to evaluate a DisruptionEvent against current or provided state context
+   */
+  public static handleDisruption(
+    event: DisruptionEvent,
+    context?: DisruptionStateContext
+  ): DisruptionAnalysisResult {
+    // Validate required disruption event payload
+    if (!event || !event.type) {
+      throw new Error("Missing required disruption event object or 'type' field.");
+    }
 
-/**
- * Handles RESOURCE_UNAVAILABLE disruption events.
- * Identifies the target resource, marks it out_of_service, and extracts affected assignments/incidents.
- */
-export const handleResourceUnavailable = (
-  disruption: DisruptionEvent,
-  stateOrProvider?: ScenarioState | StateProvider
-): DisruptionAnalysisResult => {
-  const state = resolveState(stateOrProvider);
+    const stateIncidents = context ? context.incidents : getIncidents();
+    const stateResources = context ? context.resources : getResources();
+    const stateAssignments = context ? context.assignments : getAssignments();
 
-  if (!disruption.resourceId) {
-    throw new Error("Missing required field 'resourceId' for RESOURCE_UNAVAILABLE disruption.");
-  }
+    switch (event.type) {
+      case 'RESOURCE_UNAVAILABLE':
+        return this.handleResourceUnavailable(
+          event,
+          stateIncidents,
+          stateResources,
+          stateAssignments
+        );
 
-  const resource = state.resources.find((r) => r.id === disruption.resourceId);
-  if (!resource) {
-    throw new Error(`Resource with ID '${disruption.resourceId}' not found.`);
-  }
+      case 'NEW_INCIDENT':
+        return this.handleNewIncident(event, stateIncidents);
 
-  if (resource.status === 'out_of_service') {
-    throw new Error(`Resource '${disruption.resourceId}' is already out_of_service.`);
-  }
-
-  // Create an updated resource clone
-  const updatedResource: Resource = {
-    ...resource,
-    status: 'out_of_service'
-  };
-
-  // Find assignments utilizing this resource
-  const affectedAssignments = state.assignments.filter(
-    (assignment) => assignment.resourceId === disruption.resourceId
-  );
-
-  // Extract unique affected incident IDs
-  const affectedIncidents = Array.from(
-    new Set(affectedAssignments.map((assignment) => assignment.incidentId))
-  );
-
-  // Replanning is required if the resource was assigned to any incident
-  const replanningRequired = affectedAssignments.length > 0 || resource.status === 'assigned' || resource.status === 'responding';
-
-  return {
-    disruption,
-    affectedResource: updatedResource,
-    affectedAssignments,
-    affectedIncidents,
-    replanningRequired
-  };
-};
-
-/**
- * Handles NEW_INCIDENT disruption events.
- * Verifies the incoming incident and triggers replanning evaluation.
- */
-export const handleNewIncident = (
-  disruption: DisruptionEvent,
-  stateOrProvider?: ScenarioState | StateProvider,
-  newIncidentData?: Incident
-): DisruptionAnalysisResult => {
-  const state = resolveState(stateOrProvider);
-
-  if (!disruption.incidentId) {
-    throw new Error("Missing required field 'incidentId' for NEW_INCIDENT disruption.");
+      default:
+        throw new Error(`Invalid disruption type '${(event as any).type}'. Supported types: RESOURCE_UNAVAILABLE, NEW_INCIDENT.`);
+    }
   }
 
-  const existingIncident = state.incidents.find((inc) => inc.id === disruption.incidentId);
-  const incidentToProcess = newIncidentData || existingIncident;
+  /**
+   * Handles RESOURCE_UNAVAILABLE disruption event
+   */
+  public static handleResourceUnavailable(
+    event: DisruptionEvent,
+    incidents: Incident[],
+    resources: Resource[],
+    assignments: Assignment[]
+  ): DisruptionAnalysisResult {
+    if (!event.resourceId) {
+      throw new Error("Missing required field 'resourceId' for RESOURCE_UNAVAILABLE disruption event.");
+    }
 
-  if (!incidentToProcess) {
-    throw new Error(`Incident with ID '${disruption.incidentId}' not found in system state.`);
+    // 1. Find and verify resource existence
+    const resource = resources.find((r) => r.id === event.resourceId);
+    if (!resource) {
+      throw new Error(`Resource with ID '${event.resourceId}' not found.`);
+    }
+
+    // 2. Check if resource is already out of service
+    if (resource.status === 'out_of_service') {
+      throw new Error(`Resource '${event.resourceId}' is already out_of_service.`);
+    }
+
+    // 3. Mark simulated status as out_of_service
+    resource.status = 'out_of_service';
+
+    // 4. Find any assignments using that resource (active assignments)
+    const affectedAssignments = assignments.filter(
+      (a) => a.resourceId === resource.id && a.status !== 'cancelled' && a.status !== 'completed'
+    );
+
+    // 5. Identify affected incident IDs
+    const affectedIncidentsSet = new Set<string>();
+    affectedAssignments.forEach((a) => affectedIncidentsSet.add(a.incidentId));
+
+    if (event.incidentId) {
+      affectedIncidentsSet.add(event.incidentId);
+    }
+
+    const affectedIncidents = Array.from(affectedIncidentsSet);
+    const replanningRequired = affectedAssignments.length > 0 || affectedIncidents.length > 0;
+
+    return {
+      disruption: event,
+      affectedResource: resource,
+      affectedAssignments,
+      affectedIncidents,
+      replanningRequired
+    };
   }
 
-  return {
-    disruption,
-    newIncident: incidentToProcess,
-    affectedAssignments: [],
-    affectedIncidents: [incidentToProcess.id],
-    replanningRequired: true
-  };
-};
+  /**
+   * Handles NEW_INCIDENT disruption event
+   */
+  public static handleNewIncident(
+    event: DisruptionEvent,
+    incidents: Incident[]
+  ): DisruptionAnalysisResult {
+    if (!event.incidentId) {
+      throw new Error("Missing required field 'incidentId' for NEW_INCIDENT disruption event.");
+    }
 
-/**
- * Main entry point for evaluating disruption events against the emergency scenario state.
- */
-export const handleDisruption = (
-  disruption: DisruptionEvent,
-  stateOrProvider?: ScenarioState | StateProvider,
-  additionalContext?: { newIncident?: Incident }
-): DisruptionAnalysisResult => {
-  if (!disruption || !disruption.type) {
-    throw new Error("Invalid disruption event: Missing 'type' field.");
+    // 1. Verify incident exists
+    const incident = incidents.find((i) => i.id === event.incidentId);
+    if (!incident) {
+      throw new Error(`Incident with ID '${event.incidentId}' not found.`);
+    }
+
+    // 2. Return structured analysis indicating replanning is required for dispatch
+    return {
+      disruption: event,
+      affectedResource: null,
+      affectedAssignments: [],
+      affectedIncidents: [incident.id],
+      replanningRequired: true
+    };
   }
+}
 
-  switch (disruption.type) {
-    case 'RESOURCE_UNAVAILABLE':
-      return handleResourceUnavailable(disruption, stateOrProvider);
-
-    case 'NEW_INCIDENT':
-      return handleNewIncident(disruption, stateOrProvider, additionalContext?.newIncident);
-
-    default:
-      throw new Error(`Unsupported disruption type: '${(disruption as any).type}'.`);
-  }
-};
+export const handleDisruption = DisruptionService.handleDisruption.bind(DisruptionService);
+export type ScenarioState = DisruptionStateContext;
