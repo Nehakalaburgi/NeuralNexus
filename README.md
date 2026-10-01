@@ -1,90 +1,147 @@
-# 🚨 NeuralNexus: Crisis Command & AI Emergency Control Room
+# 🚨 NeuralNexus: Autonomous Multi-Agent Emergency Crisis & Dynamic Control Room
 
-> **ResQAlloc / Crisis Command:** Autonomous Multi-Agent Dynamic Emergency Response, Live Geospatial Dispatch & Resource Reallocation System.  
-> Built for mission-critical disaster response, urban traffic gridlock bypass, and dynamic Human-in-the-Loop (HITL) fleet reallocations.
+> **ResQAlloc / NeuralNexus:** Autonomous Multi-Agent Dynamic Emergency Response, Real-Time Geospatial Dispatch & Fleet Reallocation System.  
+> Engineered to eliminate critical "Golden Hour" response delays during urban crises through AI multi-agent triage, traffic bottleneck bypass routing, and Human-in-the-Loop (HITL) preemption authorization.
 
 ---
 
 ## 📑 Table of Contents
 1. [System Overview & Architecture](#-system-overview--architecture)
-2. [Key Capabilities & Working Mechanism](#-key-capabilities--working-mechanism)
-3. [Emergency Dispatch-to-Hospital 7-Step Lifecycle](#-emergency-dispatch-to-hospital-7-step-lifecycle)
-4. [Project Structure](#-project-structure)
-5. [Quick Start & Running Instructions](#-quick-start--running-instructions)
-6. [Available Scripts](#-available-scripts)
-7. [API & WebSocket Event Specifications](#-api--websocket-event-specifications)
-8. [Environment Variables](#-environment-variables)
-9. [Geospatial Mathematics Engine](#-geospatial-mathematics-engine)
+2. [Multi-Agent AI Pipeline (Gemini 2.5 Flash)](#-multi-agent-ai-pipeline-gemini-25-flash)
+3. [Key Capabilities & Innovations](#-key-capabilities--innovations)
+4. [Emergency Dispatch-to-Hospital 7-Step Lifecycle](#-emergency-dispatch-to-hospital-7-step-lifecycle)
+5. [Monorepo Project Structure](#-monorepo-project-structure)
+6. [Quick Start & Installation](#-quick-start--installation)
+7. [Environment Configuration](#-environment-configuration)
+8. [Available Scripts & Testing Suites](#-available-scripts--testing-suites)
+9. [API & WebSocket Event Specifications](#-api--websocket-event-specifications)
+10. [Geospatial Mathematics Engine](#-geospatial-mathematics-engine)
+11. [Live Demonstration & Judge Walkthrough](#-live-demonstration--judge-walkthrough)
 
 ---
 
 ## 🌐 System Overview & Architecture
 
-NeuralNexus is an enterprise-grade emergency dispatch and multi-agent coordination platform designed to eliminate critical "Golden Hour" response delays during urban crises.
+NeuralNexus functions as an autonomous, cybernetic Emergency Operations Center (EOC). It coordinates emergency response teams, calculates dynamic detour vectors around severe arterial gridlocks, and coordinates triage allocations across municipal hospital ICU networks.
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            NEURALNEXUS ARCHITECTURE                          │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   ┌──────────────────────────────────────────────────────────────────────┐   │
-│   │               Frontend Client (React 19 + Vite + Mapbox GL)          │   │
-│   │                                                                      │   │
-│   │   • 100vw x 100vh Tactical Mapbox GIS Canvas with 3D Buildings       │   │
-│   │   • 60fps Arc-Length Parameterized Vehicle Animation & Steering      │   │
-│   │   • Multi-Agent Live Reasoning Telemetry Stream                      │   │
-│   │   • Floating Incident, Fleet & Bed Capacity Drawers                  │   │
-│   │   • Human-in-the-Loop (HITL) Priority Reallocation Modal             │   │
-│   │   • Scenario Pitch Dock & Variable Playback Controls (0.5x, 1x, 2x)  │   │
-│   └───────────────────────────────────▲──────────────────────────────────┘   │
-│                                       │                                      │
-│                         HTTP & WebSocket (Socket.IO)                         │
-│                     [Port 5000: State Streams & Audits]                      │
-│                                       │                                      │
-│   ┌───────────────────────────────────▼──────────────────────────────────┐   │
-│   │             Backend Multi-Agent Engine (Node.js + Express)           │   │
-│   │                                                                      │   │
-│   │   • Command Agent: Golden Hour utility optimization & priority triage│   │
-│   │   • Logistics Agent: Traffic gridlock detection & dynamic detours    │   │
-│   │   • Triage Agent: Specialty hospital matching & ICU bed reservation  │   │
-│   │   • Allocation Sentinel: Atomic assignment locks & preemption audits │   │
-│   └───────────────────────────────────▲──────────────────────────────────┘   │
-│                                       │                                      │
-│   ┌───────────────────────────────────▼──────────────────────────────────┐   │
-│   │                    Shared Domain Contracts & Types                   │   │
-│   │         [@neuralnexus/shared: Coordinates, Incident, Resource]        │   │
-│   └──────────────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                NEURALNEXUS SYSTEM ARCHITECTURE                         │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│   ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│   │              Frontend Client (React 19 + TypeScript + Vite + Mapbox GL)        │   │
+│   │                                                                                │   │
+│   │   • 100vw x 100vh Tactical Mapbox Canvas with 3D Building Extrusions & Pitch   │   │
+│   │   • 60fps Arc-Length Parameterized Vehicle Animation & Shortest-Arc Steering   │   │
+│   │   • Multi-Agent Real-Time Reasoning Telemetry Terminal (TRI/LOG/ALC/CMD)       │   │
+│   │   • Left Incident Queue Drawer & Right Fleet Inventory Gauges (Hover-Slide)    │   │
+│   │   • Human-in-the-Loop (HITL) Preemptive Reallocation Approval Modal            │   │
+│   │   • Mission Control Dock: Variable Speeds (0.5x, 1x, 2x, 4x) & Scenario Matrix │   │
+│   └───────────────────────────────────────▲────────────────────────────────────────┘   │
+│                                           │                                            │
+│                             HTTP REST & Socket.IO WebSockets                           │
+│                          [Port 5000: Full-Duplex Live Streaming]                       │
+│                                           │                                            │
+│   ┌───────────────────────────────────────▼────────────────────────────────────────┐   │
+│   │           Backend Multi-Agent Engine (Node.js + Express + TypeScript)          │   │
+│   │                                                                                │   │
+│   │   ┌───────────────────┐     ┌───────────────────┐     ┌───────────────────┐    │   │
+│   │   │ Assessment Agent  │ ──► │ Allocation Agent  │ ──► │ Validator Guard   │    │   │
+│   │   │ (Gemini Triage)   │     │ (Constraint Match)│     │ (DB Authority)    │    │   │
+│   │   └───────────────────┘     └───────────────────┘     └─────────┬─────────┘    │   │
+│   │                                                                 │              │   │
+│   │   ┌───────────────────┐     ┌───────────────────┐               ▼              │   │
+│   │   │ Dynamic Replan    │ ◄── │ Planning Agent    │ ◄─────────────┘              │   │
+│   │   │ (State Manager)   │     │ (SITREP & Risks)  │                              │   │
+│   │   └───────────────────┘     └───────────────────┘                              │   │
+│   └───────────────────────────────────────▲────────────────────────────────────────┘   │
+│                                           │                                            │
+│   ┌───────────────────────────────────────▼────────────────────────────────────────┐   │
+│   │                       Shared Monorepo Domain Contracts                         │   │
+│   │            [@shared/emergency: Coordinates, Incident, Resource, Routes]        │   │
+│   └────────────────────────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚡ Key Capabilities & Working Mechanism
+## 🤖 Multi-Agent AI Pipeline (Gemini 2.5 Flash)
 
-### 1. Full-Screen 100vw x 100vh Mapbox Geospatial Canvas
-- High-performance Mapbox GL canvas rendering the entire Bengaluru metropolitan area with custom dark vector styling.
-- Interactive camera controls (pitch, bearing, 3D building extrusions, live traffic layer overlay).
-- Tactical glassmorphic floating HUD overlays (Incident Drawer, Fleet Inventory, Agent Telemetry Stream, and Scenario Presentation Controls).
+NeuralNexus integrates a sequential multi-agent AI pipeline built on Google's `@google/genai` SDK and powered by `gemini-2.5-flash`:
 
-### 2. 60fps Arc-Length Parameterized Vehicle Movement
-- Real-time vehicle animation using cumulative Haversine distance arc-length parameterization (`slicePolylineAtProgress`).
-- Eliminates erratic speed jumps across uneven GPS nodes, maintaining a consistent, realistic emergency speed.
-- Shortest-arc heading steering (`lerpAngle`) ensures vehicles smoothly navigate street curves and intersections without angular snapping or 360° flip artifacts.
-- Visual beacons with pulsating siren halos and directional forward compass beams.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant D as Dispatch / Disruption Feed
+    participant A1 as Assessment Agent (AI)
+    participant A2 as Allocation Agent (AI)
+    participant V as DB Authority Validator
+    participant A3 as Planning Agent (AI)
+    participant RE as Integrated Replanning Engine
+    participant UI as Emergency Control Room UI
 
-### 3. Dynamic Traffic Jam Detection & AI Bypass
-- Real-time traffic congestion monitoring identifies arterial bottlenecks.
-- The system renders congested segments in high-visibility glowing red (`#ef4444`) while instantly calculating and deploying dynamic bypass vectors in amber (`#f59e0b`), saving up to 8.8 minutes of critical transit time.
+    D->>A1: Unstructured Incident / Disruption Event
+    Note over A1: Extracts severity (1-5), urgency,<br/>required apparatus & coordinates
+    A1->>A2: Triaged Incident Assessment
+    Note over A2: Computes priority queue,<br/>evaluates fleet proximity & tradeoffs
+    A2->>V: Proposed Reallocation Matrix
+    Note over V: Validates against DB locks,<br/>detects phantom units / double bookings
+    V->>A3: Verified Assignment Set
+    Note over A3: Generates SITREP headline,<br/>operational risk audit & commander actions
+    A3->>RE: Validated Replan Package
+    alt Requires Human Approval (Severity 5 Preemption)
+        RE->>UI: Emit 'approval_required' (HITL Modal)
+        UI->>RE: Dispatcher Confirms Reallocation
+    else Automated Low-Impact Assignment
+        RE->>UI: Emit 'state_update' (Direct Live Commit)
+    end
+```
+
+### Agent Roles & Guardrails
+
+1. **Assessment Agent (`assessmentAgent.ts`)**:
+   - Parses noisy emergency dispatches into clinical severity classifications (1–5), urgency ratings (`low`, `medium`, `high`, `critical`), required resource types (`ambulance`, `fire`, `rescue`, `hazmat`), and geocoded locations.
+2. **Allocation Agent (`allocationAgent.ts`)**:
+   - Solves multi-incident resource contention by maximizing clinical survival probability and minimizing travel times, providing quantitative trade-off justifications.
+3. **Database Authority Guardrail (`validator.ts`)**:
+   - Acts as a strict schema and state validator that prevents AI hallucinations, eliminates duplicate bookings, and ensures only registered fleet resources in the database can be dispatched.
+4. **Planning Agent (`planningAgent.ts`)**:
+   - Synthesizes operational insights into executive Situation Reports (SITREPs), identifies systemic traffic/weather risks, and formulates strategic recommendations for human commanders.
+5. **Integrated Replanning Engine (`integratedReplanningEngine.ts`)**:
+   - Evaluates whether an event (`RESOURCE_UNAVAILABLE`, `TRAFFIC_CONGESTION`, `NEW_INCIDENT`) can be handled automatically or requires Human-in-the-Loop (HITL) approval.
+
+---
+
+## ⚡ Key Capabilities & Innovations
+
+### 1. 100vw x 100vh 3D Tactical Mapbox Canvas
+- **Immersive Viewport**: High-contrast, dark cybernetic vector map of Bengaluru metropolitan area with zero wasted screen space.
+- **3D Tactical Perspective**: One-click 3D camera toggle adding 45° pitch and dynamic bearing perspective to observe 3D building extrusions and elevation layers.
+- **Dynamic Traffic Congestion Layer**: Real-time arterial flow visualization highlighting live gridlocks and bypass corridors.
+
+### 2. 60fps Arc-Length Parameterized Vehicle Animation
+- **Continuous Velocity Interpolation**: Uses cumulative Haversine distance arc-length parameterization (`slicePolylineAtProgress`) to eliminate speed spikes across irregular waypoint densities.
+- **Shortest-Arc Angular Steering (`lerpAngle`)**: Vehicles smoothly rotate through corners without 360° flip artifacts or angular snapping.
+- **Pulsating Sirens & Forward Beacons**: Real-time visual halos and heading rays communicate emergency vehicle priority on the road.
+
+### 3. Dynamic Traffic Jam Detection & AI Bypass Routing
+- Instant identification of arterial bottlenecks on major transit routes (e.g., Hosur Road corridor).
+- Renders gridlocked roads in high-visibility neon red (`#FF2A3B`) and automatically deploys optimal amber bypass routes (`#F59E0B`), shaving up to **8.8 minutes** off emergency response times.
 
 ### 4. Human-in-the-Loop (HITL) Safety Gateway
-- When a higher-severity crisis (e.g., Severity 5 Multi-Vehicle Crash) occurs while fleet units are already dispatched to lower-priority calls, the Gemini-powered Command Agent generates a preemptive reallocation proposal.
-- A modal presents the commander with quantitative Golden Hour time savings, risk evaluations, and trade-off justifications before confirming any diversion.
+- When a critical incident (Severity 5) demands preempting an ambulance already en route to a minor call (Severity 2), the system does not silently reassign units.
+- An interactive **Command Authorization Modal** displays quantitative Golden Hour time savings, risk evaluations, and ethical justifications, requiring dispatcher sign-off before committing route changes.
+
+### 5. Floating Editorial Brutalist Telemetry HUD
+- **Left Incident Queue Drawer**: Live active emergency cards with severity tags, required apparatus pills, target trauma hospital, and focus-map shortcuts.
+- **Right Fleet Telemetry Drawer**: Live fleet deployment meters, real-time ETAs, remaining distances, base stations, and delay/savings indicators.
+- **Bottom-Right Agent Telemetry Terminal**: Filterable streaming feed of multi-agent reasoning (`ALL`, `TRIAGE`, `LOGISTICS`, `ALLOCATION`, `COMMAND`).
+- **Bottom Presentation Dock**: Scenario switches (Normal, Traffic Detour, Evacuation, Preemption), simulation speeds (0.5x, 1x, 2x, 4x), and reset controls.
 
 ---
 
 ## 🔄 Emergency Dispatch-to-Hospital 7-Step Lifecycle
-
-NeuralNexus executes a complete end-to-end 7-step lifecycle:
 
 ```mermaid
 graph TD
@@ -96,117 +153,142 @@ graph TD
     S6 --> S7["7. Fleet Turnaround & Reset to Available"]
 ```
 
-| Step | Stage Name | Visual State & Action | Route Color & Vector |
+| Step | Stage Name | Visual State & Action | Route Corridor & Vector |
 | :--- | :--- | :--- | :--- |
-| **1** | **Initial Dispatch** | Fire Engine and ALS Ambulances dispatched to primary structural fire incident. | Neon Sky Blue (`#38bdf8`) Leg 1 Corridor |
-| **2** | **Traffic Bypass** | Arterial gridlock detected on Hosur Rd (+11 min delay); ALS unit redirected via dynamic bypass. | Congested Red (`#ef4444`) + Amber (`#f59e0b`) Detour |
-| **3** | **On-Scene Triage** | Unit arrives at incident scene; pauses for 4.0s with floating `[ON SCENE: STABILIZING PATIENT]` badge. | Vehicle parked on scene with active triage aura |
-| **4** | **Specialty Matching** | Incident matched to receiving facility (e.g., Burn ICU Hub at Victoria Hospital). | Facility specialty lock & ICU reservation |
-| **5** | **Hospital Evacuation** | Code-3 evacuation begins along high-density road vector to receiving emergency bay. | Deep Cobalt Blue (`#2563eb`) Leg 2 Corridor |
-| **6** | **Patient Delivered** | Ambulance reaches hospital gate; receiving facility available bed count decrements (-1 bed). | Hospital arrival alert & handover confirmation |
-| **7** | **Fleet Reset** | Patient transferred; unit resets to `AVAILABLE` for redeployment. | Unit returns to patrol or standby status |
+| **1** | **Initial Dispatch** | Unit dispatched from base station to incident scene. | Neon Cyan (`#00F0FF`) Leg 1 Vector |
+| **2** | **Traffic Bypass** | Arterial gridlock detected; unit automatically rerouted via bypass. | Gridlock Red (`#FF2A3B`) + Detour Amber (`#F59E0B`) |
+| **3** | **On-Scene Triage** | Unit arrives at scene; pauses for stabilization with `ON SCENE` status. | Vehicle stationary at scene with pulsating triage halo |
+| **4** | **Specialty Matching** | Incident matched to trauma facility (e.g., Burn ICU at Victoria Hospital). | Facility specialty lock & automated bed reservation |
+| **5** | **Hospital Evacuation** | Code-3 patient transport to receiving medical trauma center. | Deep Cobalt Blue (`#3B82F6`) Leg 2 Vector |
+| **6** | **Patient Delivered** | Unit reaches hospital gate; receiving trauma ICU bed count decrements (-1). | Handover notification & hospital arrival confirm |
+| **7** | **Fleet Reset** | Patient handed over; unit transitions back to `AVAILABLE` for redeployment. | Unit returns to base or regional patrol standby |
 
 ---
 
-## 📁 Project Structure
+## 📁 Monorepo Project Structure
 
 ```text
 NeuralNexus/
-├── frontend/                   # 🌐 React 19 + Vite + Mapbox GL Emergency UI
+├── frontend/                   # 🌐 React 19 + TypeScript + Vite + Mapbox GL UI
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── layout/         # TopNav (telemetry header), DemoControls (scenario dock)
 │   │   │   ├── map/            # MapView (Mapbox canvas), MapMarkers, RouteLayers, TrafficLayers
-│   │   │   ├── modals/         # ApprovalModal (HITL verification gate)
-│   │   │   └── panels/         # IncidentDrawer, FleetDrawer, AgentTelemetry stream
-│   │   ├── data/               # mockBengaluruState.ts, roadRoutes.ts (high-density waypoints)
+│   │   │   ├── modals/         # ApprovalModal (HITL authorization gate)
+│   │   │   └── panels/         # IncidentDrawer, FleetDrawer, AgentTelemetry terminal
+│   │   ├── data/               # mockBengaluruState.ts, roadRoutes.ts (high-density road nodes)
 │   │   ├── hooks/              # useEmergencyState.ts (master lifecycle & Socket.IO client)
-│   │   ├── types/              # emergency.ts (strictly typed contracts)
+│   │   ├── types/              # emergency.ts (strictly typed emergency domain model)
 │   │   ├── utils/              # geoUtils.ts (Haversine distance, arc-length slicer, bearing)
-│   │   ├── App.tsx             # Main full-screen application layout
-│   │   ├── index.css           # Tactical design tokens, glassmorphism, animations
-│   │   └── main.tsx            # React root entrypoint
+│   │   ├── App.tsx             # Full-screen responsive application layout
+│   │   ├── index.css           # Tactical brutalist styling, glassmorphic tokens, neon colors
+│   │   └── main.tsx            # React application entrypoint
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
 │
-├── backend/                    # ⚙️ Node.js + Express + Socket.IO Multi-Agent API
+├── backend/                    # ⚙️ Node.js + Express + Socket.IO Multi-Agent Backend
 │   ├── src/
-│   │   ├── models/             # Mongoose schemas (Incident, Resource, Assignment, DecisionLog)
-│   │   ├── services/           # socketService.ts (Socket.IO events, state broadcasting, HITL)
-│   │   └── server.ts           # Express server, CORS setup, health check endpoint
+│   │   ├── agents/             # assessmentAgent.ts, allocationAgent.ts, planningAgent.ts
+│   │   ├── data/               # seedData.ts (benchmark incidents, fleet & hospital models)
+│   │   ├── replanning/         # replanningEngine.ts, demoReplanning.ts, testSuite.ts
+│   │   ├── scenarios/          # emergencyScenario.ts, testScenario.ts
+│   │   ├── services/           # orchestrator.ts, geminiClient.ts, validator.ts,
+│   │   │                       # integratedReplanningEngine.ts, disruptionService.ts,
+│   │   │                       # decisionLogService.ts, replanningService.ts, socketService.ts
+│   │   ├── types/              # agentTypes.ts (multi-agent message formats)
+│   │   ├── utils/              # geo.ts (backend geospatial distance calculation)
+│   │   ├── testAiPipeline.ts   # Multi-agent AI pipeline end-to-end test suite
+│   │   └── server.ts           # Express HTTP server, Socket.IO server, REST routes
+│   ├── .env.example
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── shared/                     # 📦 Common TypeScript interfaces shared across packages
+├── shared/                     # 📦 Shared TypeScript domain contracts
 │   ├── src/
-│   │   └── index.ts            # Shared types (Coordinates, Incident, Resource, RouteGeometry)
+│   │   └── emergency.ts        # Shared types (Coordinates, Incident, Resource, RouteGeometry)
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── package.json                # 🚀 Root monorepo orchestration script
-└── README.md                   # Comprehensive documentation
+├── package.json                # 🚀 Root monorepo orchestration & unified scripts
+└── README.md                   # System documentation & developer guide
 ```
 
 ---
 
-## 🚀 Quick Start & Running Instructions
+## 🚀 Quick Start & Installation
 
 ### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher
+- **Node.js**: `v18.0.0` or higher
+- **npm**: `v9.0.0` or higher
 
 ---
 
-### Method A: Single-Command Full Stack (Recommended)
+### 1. Clone & Install Dependencies
 
-From the project root:
+From the repository root directory:
 
 ```bash
-# 1. Install all dependencies across monorepo packages
-npm run install:all
-
-# 2. Start both Backend (Port 5000) and Frontend (Port 5173) concurrently
-npm run dev
-```
-
-- **Frontend Application:** [http://localhost:5173](http://localhost:5173)
-- **Backend API & Socket.IO:** [http://localhost:5000](http://localhost:5000)
-- **Backend Health Check:** [http://localhost:5000/health](http://localhost:5000/health)
-
----
-
-### Method B: Running Services Separately
-
-#### 1. Backend Server (`backend/`)
-```bash
-cd backend
+# Install dependencies across root, shared, frontend, and backend packages
 npm install
-npm run dev
 ```
-*Starts the Express server & Socket.IO stream on `http://localhost:5000`.*
-
-#### 2. Frontend Client (`frontend/`)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Starts the Vite dev server with Hot Module Replacement on `http://localhost:5173`.*
 
 ---
 
-## 🛠 Available Scripts
+### 2. Configure Environment Variables
 
-| Command | Working Directory | Description |
+Create `.env` files in both `backend/` and `frontend/`:
+
+#### Backend Configuration (`backend/.env`):
+```env
+PORT=5000
+NODE_ENV=development
+MONGO_URI=mongodb://127.0.0.1:27017/resqalloc?directConnection=true
+
+# Google Gemini API Key for Multi-Agent AI Pipeline
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+```
+*(Note: If no Gemini API key is provided, the backend automatically utilizes deterministic algorithmic reasoning fallbacks to ensure 100% resilience during presentations).*
+
+#### Frontend Configuration (`frontend/.env`):
+```env
+# Optional Mapbox public access token (bundled demo token included by default)
+VITE_MAPBOX_TOKEN=pk.eyJ1IjoiZGV2LWVtZXJnZW5jeSIsImEiOiJjbHN2eGJ0MWgwMHF5MmtwZnlicTFleDZtIn0.placeholder
+
+# Backend WebSocket Stream URL
+VITE_WS_URL=http://localhost:5000
+```
+
+---
+
+### 3. Launch Development Environment
+
+Run both backend and frontend concurrently with unified colored output:
+
+```bash
+npm run dev
+```
+
+- 🌐 **Frontend Application:** [http://localhost:5173](http://localhost:5173)
+- ⚙️ **Backend API & WebSocket:** [http://localhost:5000](http://localhost:5000)
+- 🩺 **Backend Health Endpoint:** [http://localhost:5000/health](http://localhost:5000/health)
+
+---
+
+## 🛠 Available Scripts & Testing Suites
+
+| Command | Location | Description |
 | :--- | :--- | :--- |
-| `npm run dev` | Root | Runs backend and frontend concurrently with unified colored terminal logging |
-| `npm run dev:frontend` | Root | Starts frontend Vite dev server |
-| `npm run dev:backend` | Root | Starts backend server with auto-reload (`tsx watch`) |
-| `npm run build` | Root | Compiles shared, frontend, and backend packages for production (TypeScript + Vite) |
-| `npm run build:frontend` | Root | Compiles frontend production bundle |
-| `npm run build:backend` | Root | Compiles backend TypeScript to `dist/` |
-| `npm run install:all` | Root | Installs dependencies across root, shared, frontend, and backend |
+| `npm run dev` | Root | Starts Backend (`tsx watch`) and Frontend (`vite`) concurrently |
+| `npm run dev:backend` | Root | Starts backend server only with auto-reload |
+| `npm run dev:frontend` | Root | Starts frontend Vite development server |
+| `npm run build` | Root | Compiles all packages (`shared`, `frontend`, `backend`) for production |
+| `npm run test:ai` | Root | Runs the Gemini Multi-Agent AI Pipeline validation test |
+| `npm run test:scenario` | Root | Executes the emergency scenario state verification test |
+| `npm run test:backend` | Root | Runs all backend integration and unit test suites |
+| `npm run build:frontend` | Frontend | Builds the minified production frontend bundle |
+| `npm run build:backend` | Backend | Compiles backend TypeScript to `dist/` |
 
 ---
 
@@ -214,45 +296,26 @@ npm run dev
 
 ### REST Endpoints
 
-| Method | Endpoint | Description |
+| Method | Route | Description |
 | :--- | :--- | :--- |
-| `GET` | `/health` | Health-check endpoint returning service status and timestamp. |
-| `GET` | `/api/state` | Returns the current snapshot of all active incidents, resources, and routes. |
-| `POST` | `/api/seed` | Resets and re-seeds database with benchmark Bengaluru scenarios. |
-| `PATCH` | `/api/resources/:id/status` | Updates vehicle status (e.g. `AVAILABLE`, `OUT_OF_SERVICE`, `DISPATCHED`). |
-| `POST` | `/api/assignments/approve` | Commits dispatcher approval for resource reallocations. |
+| `GET` | `/health` | Health-check endpoint returning service uptime and timestamp |
+| `GET` | `/api/state` | Returns the current snapshot of active incidents, resources, and routes |
+| `POST` | `/api/seed` | Resets and re-seeds database with benchmark Bengaluru crisis scenario |
+| `POST` | `/api/replan` | Triggers the AI Multi-Agent replanning pipeline with custom incident input |
+| `PATCH` | `/api/resources/:id/status` | Updates vehicle status (`AVAILABLE`, `DISPATCHED`, `UNAVAILABLE`) |
+| `POST` | `/api/assignments/approve` | Commits human dispatcher authorization for unit reassignments |
 
-### Socket.IO Real-Time Stream Events
+### Socket.IO Full-Duplex Real-Time Stream
 
 | Direction | Event Name | Payload Description |
 | :--- | :--- | :--- |
-| **Server ➔ Client** | `agent_status` | Emits active multi-agent status (`ONLINE`) upon connection. |
-| **Server ➔ Client** | `state_update` | Emits full world state updates when incidents or fleet positions change. |
-| **Server ➔ Client** | `approval_required` | Emits reallocation proposal requiring human dispatcher sign-off. |
-| **Client ➔ Server** | `approve_reallocation` | Sends dispatcher approval `{ incidentId, resourceId, timestamp }`. |
-| **Server ➔ Client** | `approval_confirmed` | Broadcasts confirmed reallocation with decision log to all dashboards. |
-| **Client ➔ Server** | `reject_reallocation` | Sends operator override rejection `{ incidentId }`. |
-| **Server ➔ Client** | `approval_rejected` | Broadcasts cancellation and logs operator override. |
-
----
-
-## 🔑 Environment Variables
-
-### Frontend (`frontend/.env`)
-```env
-# Optional Mapbox public access token (fallback token included for instant demo)
-VITE_MAPBOX_TOKEN=pk.eyJ1IjoiZGV2LWVtZXJnZW5jeSIsImEiOiJjbHN2eGJ0MWgwMHF5MmtwZnlicTFleDZtIn0.placeholder
-
-# Backend WebSocket URL
-VITE_WS_URL=http://localhost:5000
-```
-
-### Backend (`backend/.env`)
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb://127.0.0.1:27017/resqalloc?directConnection=true
-```
+| **Server ➔ Client** | `agent_status` | Emits active multi-agent status (`ONLINE`) upon connection |
+| **Server ➔ Client** | `state_update` | Emits updated `WorldState` snapshot upon fleet position or triage change |
+| **Server ➔ Client** | `approval_required` | Emits preemptive reallocation proposal requiring human dispatcher sign-off |
+| **Client ➔ Server** | `approve_reallocation` | Sends dispatcher approval `{ incidentId, resourceId, timestamp }` |
+| **Server ➔ Client** | `approval_confirmed` | Broadcasts confirmed reallocation with decision log audit to all dashboards |
+| **Client ➔ Server** | `reject_reallocation` | Sends operator override rejection `{ incidentId }` |
+| **Server ➔ Client** | `approval_rejected` | Broadcasts rejection and logs human supervisor override |
 
 ---
 
@@ -273,9 +336,11 @@ $$\text{smoothedBearing} = (\text{current} + \text{diff} \cdot \alpha + 360) \pm
 
 ---
 
-## 🏆 Presentation & Live Demonstration Tips
+## 🏆 Live Demonstration & Judge Walkthrough
 
-1. **Full-Screen Immersion**: Open [http://localhost:5173](http://localhost:5173). The interface automatically expands to fill your entire viewport with responsive tactical overlays.
-2. **Interactive Scenarios**: Use the bottom presentation dock to trigger **1. Normal Dispatch**, **2. Traffic Gridlock & Bypass**, and **3. Hospital Evacuation (Leg 2)**.
-3. **Variable Speed**: Toggle between `0.5x Slow`, `1.0x Normal`, and `2.0x Fast` to demonstrate high-speed decision-making or slow-motion turn-by-turn steering.
-4. **Live Backend Mode**: Toggle the badge in the top-right navbar from **MOCK DATA** to **LIVE WS** to connect to the Node.js backend.
+1. **Full-Screen Immersion**: Open [http://localhost:5173](http://localhost:5173). The interface automatically expands to fill the viewport with tactical HUD overlays.
+2. **3D Perspective Toggle**: Click the **3D VIEW** button in the top navigation bar to toggle between top-down 2D overview and 3D building extrusions with pitch angle.
+3. **Traffic Gridlock & Bypass Detour**: Observe the Hosur Road congestion corridor rendered in red (`#FF2A3B`) while the ambulance dynamically navigates the amber bypass detour (`#F59E0B`), saving **8.8 minutes**.
+4. **Agent Telemetry Stream**: Expand the bottom-right terminal and filter by `TRIAGE`, `LOGISTICS`, `ALLOCATION`, or `COMMAND` to inspect real-time AI reasoning logs.
+5. **Human-in-the-Loop Preemption**: When a Severity 5 crisis arises, observe the **Command Authorization Modal**, review the trade-off metrics, and click **Authorize Reallocation**.
+6. **Live Backend Mode**: Toggle the navbar badge from **MOCK SIMULATION** to **LIVE AUTHORITY** to stream state directly from the Node.js backend.

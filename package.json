@@ -9,8 +9,15 @@
     "shared"
   ],
   "scripts": {
-  "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,cyan\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-  "build": "npm run build --prefix shared && npm run build --prefix frontend && npm run build --prefix backend"
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,cyan\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix shared && npm run build --prefix frontend && npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "test:ai": "npm run test:ai --prefix backend",
+    "test:scenario": "npm run test:scenario --prefix backend",
+    "test:backend": "npm run test:ai --prefix backend && npm run test:scenario --prefix backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.4"
