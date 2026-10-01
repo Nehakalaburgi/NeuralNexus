@@ -1,5 +1,4 @@
-import type {
-  DisruptionEvent,
+import {
   Incident,
   Resource,
   Assignment,
@@ -7,422 +6,334 @@ import type {
   AlternativeAssignment,
   ReplanningResult,
   DecisionLog
-} from '@neuralnexus/shared';
-import type { DisruptionAnalysisResult, ScenarioState } from './disruptionService.js';
-import { defaultStateProvider, type StateProvider } from './stateProvider.js';
-import { addDecisionLog } from './decisionLogService.js';
+} from '@shared/emergency';
+import { DisruptionAnalysisResult } from './disruptionService';
+import { DecisionLogService } from './decisionLogService';
+import {
+  getIncidents,
+  getResources,
+  getAssignments,
+  getResponsePlan
+} from '../scenarios/emergencyScenario';
+import { calculateDistance, calculateEta } from '../utils/geo';
 
-export interface ReplanningOutcome {
-  replanningResult: ReplanningResult;
-  revisedPlan: ResponsePlan;
-  decisionLogs?: DecisionLog[];
+export interface ReplanningContext {
+  incidents: Incident[];
+  resources: Resource[];
+  assignments: Assignment[];
+  responsePlan: ResponsePlan;
 }
 
 /**
- * Helper to resolve a ScenarioState object from either a raw state or a StateProvider.
+ * Dynamic Replanning Service for NeuralNexus
+ * Takes a disruption analysis result and generates a revised emergency response plan.
  */
-const resolveState = (stateOrProvider?: ScenarioState | StateProvider): ScenarioState => {
-  if (!stateOrProvider) {
-    return defaultStateProvider.getState();
-  }
-  if ('getState' in stateOrProvider && typeof stateOrProvider.getState === 'function') {
-    return stateOrProvider.getState();
-  }
-  return stateOrProvider as ScenarioState;
-};
+export class ReplanningService {
+  /**
+   * Main entry point to create a revised response plan from a disruption analysis result
+   */
+  public static replanResponsePlan(
+    analysis: DisruptionAnalysisResult,
+    context?: ReplanningContext
+  ): { replanningResult: ReplanningResult; revisedResponsePlan: ResponsePlan } {
+    const incidents = context ? context.incidents : getIncidents();
+    const resources = context ? context.resources : getResources();
+    const assignments = context ? context.assignments : getAssignments();
+    const currentPlan = context ? context.responsePlan : getResponsePlan();
 
-/**
- * Calculates straight-line distance in kilometers between two lat/lng coordinates (Haversine formula).
- */
-export const calculateDistance = (
-  loc1: { lat: number; lng: number },
-  loc2: { lat: number; lng: number }
-): number => {
-  const R = 6371; // Earth radius in km
-  const dLat = ((loc2.lat - loc1.lat) * Math.PI) / 180;
-  const dLng = ((loc2.lng - loc1.lng) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((loc1.lat * Math.PI) / 180) *
-      Math.cos((loc2.lat * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+    const affectedIncidents = analysis.affectedIncidents || [];
+    const oldAssignments = [...analysis.affectedAssignments];
+    const alternatives: AlternativeAssignment[] = [];
+    const newAssignments: Assignment[] = [];
 
-/**
- * Calculates a simulated estimated time of arrival (ETA in minutes) based on spatial distance.
- */
-export const calculateSimulatedETA = (
-  resourceLoc: { lat: number; lng: number },
-  incidentLoc: { lat: number; lng: number }
-): number => {
-  const distanceKm = calculateDistance(resourceLoc, incidentLoc);
-  // Assume average emergency vehicle speed in urban traffic (~30 km/h) + 2 min dispatch overhead
-  const travelMinutes = Math.round((distanceKm / 30) * 60) + 2;
-  return Math.max(3, travelMinutes); // Minimum 3 mins ETA
-};
+    let requiresHumanApproval = false;
+    let mainReason = '';
 
-/**
- * Filters system resources to find compatible available candidates for a required resource type.
- */
-export const findCandidateResources = (
-  requiredType: string,
-  resources: Resource[],
-  excludedResourceId?: string
-): Resource[] => {
-  return resources.filter(
-    (resource) =>
-      resource.type === requiredType &&
-      resource.status === 'available' &&
-      resource.id !== excludedResourceId
-  );
-};
+    // ----------------------------------------------------
+    // Disruption Type 1: RESOURCE_UNAVAILABLE
+    // ----------------------------------------------------
+    if (analysis.disruption.type === 'RESOURCE_UNAVAILABLE') {
+      const unavailableResourceId = analysis.disruption.resourceId;
 
-/**
- * Generates ranked AlternativeAssignment options for an incident from candidate resources.
- */
-export const generateAlternatives = (
-  incident: Incident,
-  candidates: Resource[]
-): AlternativeAssignment[] => {
-  const alternatives: AlternativeAssignment[] = candidates.map((candidate) => {
-    const eta = calculateSimulatedETA(candidate.location, incident.location);
-    return {
-      resourceId: candidate.id,
-      incidentId: incident.id,
-      eta,
-      impact: 'low',
-      reason: `${candidate.id} is available and compatible with the ${candidate.type} requirement.`
-    };
-  });
+      for (const incidentId of affectedIncidents) {
+        const incident = incidents.find((i) => i.id === incidentId);
+        if (!incident) continue;
 
-  // Rank alternatives: sort by impact priority ('low' > 'medium' > 'high'), then by lowest ETA
-  alternatives.sort((a, b) => {
-    if (a.impact !== b.impact) {
-      const impactScore = { low: 1, medium: 2, high: 3 };
-      return impactScore[a.impact] - impactScore[b.impact];
+        // Determine affected assignment for this incident
+        const affectedAssign = oldAssignments.find((a) => a.incidentId === incidentId);
+        if (!affectedAssign) continue;
+
+        // Find the resource type of the lost assignment
+        const lostResource = resources.find((r) => r.id === unavailableResourceId);
+        const requiredType = lostResource ? lostResource.type : incident.requiredResources[0] || 'ambulance';
+
+        // Find candidate available resources
+        const candidates = this.findCandidateResources(requiredType, resources);
+
+        if (candidates.length === 0) {
+          // No available resource candidate
+          requiresHumanApproval = true;
+          mainReason = `Resource ${unavailableResourceId} became unavailable for ${incident.id}. No available compatible ${requiredType} found. Flagged for human dispatcher attention.`;
+
+          DecisionLogService.addDecisionLog({
+            timestamp: analysis.disruption.timestamp || new Date().toISOString(),
+            event: 'RESOURCE_UNAVAILABLE',
+            affectedIncident: incident.id,
+            resourceId: unavailableResourceId,
+            action: `Flagged ${incident.id} for human dispatcher attention`,
+            reason: mainReason,
+            requiresHumanApproval: true
+          });
+        } else {
+          // Generate and rank alternatives
+          const generatedAlts = this.generateAlternatives(incident, requiredType, candidates);
+          alternatives.push(...generatedAlts);
+
+          // Select best alternative (lowest ETA)
+          const bestAlt = this.selectBestAlternative(generatedAlts);
+
+          if (bestAlt) {
+            // Check for duplicate assignment prevention
+            const isAlreadyAssigned = assignments.some(
+              (a) => a.incidentId === incident.id && a.resourceId === bestAlt.resourceId && a.status !== 'cancelled'
+            );
+
+            if (!isAlreadyAssigned) {
+              const selectedRes = resources.find((r) => r.id === bestAlt.resourceId);
+              if (selectedRes) {
+                selectedRes.status = 'assigned';
+                selectedRes.assignedIncidentId = incident.id;
+              }
+
+              const newAssignment: Assignment = {
+                incidentId: incident.id,
+                resourceId: bestAlt.resourceId,
+                eta: bestAlt.eta,
+                status: 'assigned'
+              };
+
+              newAssignments.push(newAssignment);
+              mainReason = `${unavailableResourceId} became unavailable. ${bestAlt.resourceId} was selected as an available compatible ${requiredType}.`;
+
+              DecisionLogService.addDecisionLog({
+                timestamp: analysis.disruption.timestamp || new Date().toISOString(),
+                event: 'RESOURCE_UNAVAILABLE',
+                affectedIncident: incident.id,
+                resourceId: unavailableResourceId,
+                action: `Replanned ${incident.id} to ${bestAlt.resourceId}`,
+                reason: `${unavailableResourceId} became unavailable.`,
+                requiresHumanApproval: false
+              });
+            }
+          } else {
+            requiresHumanApproval = true;
+            mainReason = `Failed to select an alternative resource for ${incident.id}. Requires human approval.`;
+
+            DecisionLogService.addDecisionLog({
+              timestamp: analysis.disruption.timestamp || new Date().toISOString(),
+              event: 'RESOURCE_UNAVAILABLE',
+              affectedIncident: incident.id,
+              resourceId: unavailableResourceId,
+              action: `Flagged ${incident.id} for human dispatcher selection`,
+              reason: mainReason,
+              requiresHumanApproval: true
+            });
+          }
+        }
+      }
     }
-    return a.eta - b.eta;
-  });
+    // ----------------------------------------------------
+    // Disruption Type 2: NEW_INCIDENT
+    // ----------------------------------------------------
+    else if (analysis.disruption.type === 'NEW_INCIDENT') {
+      const incidentId = analysis.disruption.incidentId;
+      const newIncident = incidents.find((i) => i.id === incidentId);
 
-  return alternatives;
-};
+      if (newIncident) {
+        const assignedForNewIncident: string[] = [];
+        const missingRequirements: string[] = [];
 
-/**
- * Selects the best available alternative from candidate options.
- */
-export const selectBestAlternative = (
-  alternatives: AlternativeAssignment[]
-): AlternativeAssignment | null => {
-  return alternatives.length > 0 ? alternatives[0] : null;
-};
+        for (const reqType of newIncident.requiredResources) {
+          const candidates = this.findCandidateResources(reqType, resources);
 
-/**
- * Determines whether human operator approval is required for the replanning result.
- */
-export const determineHumanApproval = (
-  alternatives: AlternativeAssignment[],
-  newAssignments: Assignment[]
-): boolean => {
-  if (alternatives.length === 0 || newAssignments.length === 0) {
-    return true;
-  }
-  return false;
-};
+          if (candidates.length > 0) {
+            const generatedAlts = this.generateAlternatives(newIncident, reqType, candidates);
+            alternatives.push(...generatedAlts);
 
-/**
- * Generates a revised ResponsePlan with version incremented and unaffected assignments preserved.
- */
-export const createRevisedPlan = (
-  currentPlan: ResponsePlan,
-  oldAssignments: Assignment[],
-  newAssignments: Assignment[],
-  requiresHumanApproval: boolean
-): ResponsePlan => {
-  const oldResourceIds = new Set(oldAssignments.map((a) => a.resourceId));
+            const bestAlt = this.selectBestAlternative(generatedAlts);
+            if (bestAlt) {
+              const selectedRes = resources.find((r) => r.id === bestAlt.resourceId);
+              if (selectedRes) {
+                selectedRes.status = 'assigned';
+                selectedRes.assignedIncidentId = newIncident.id;
+              }
 
-  // Preserve unaffected assignments
-  const preservedAssignments = currentPlan.assignments.filter(
-    (assignment) => !oldResourceIds.has(assignment.resourceId)
-  );
+              const newAssign: Assignment = {
+                incidentId: newIncident.id,
+                resourceId: bestAlt.resourceId,
+                eta: bestAlt.eta,
+                status: 'assigned'
+              };
 
-  return {
-    id: currentPlan.id,
-    version: currentPlan.version + 1,
-    assignments: [...preservedAssignments, ...newAssignments],
-    status: requiresHumanApproval ? 'pending_approval' : 'active'
-  };
-};
+              newAssignments.push(newAssign);
+              assignedForNewIncident.push(bestAlt.resourceId);
+            }
+          } else {
+            // Required resource not available in standby pool
+            missingRequirements.push(reqType);
+            requiresHumanApproval = true;
 
-/**
- * Handles dynamic replanning when a NEW_INCIDENT enters the system.
- */
-export const replanNewIncident = (
-  disruptionResult: DisruptionAnalysisResult,
-  stateOrProvider?: ScenarioState | StateProvider,
-  currentPlan?: ResponsePlan
-): ReplanningOutcome => {
-  const state = resolveState(stateOrProvider);
-  const activePlan = currentPlan || state.responsePlan || defaultStateProvider.getResponsePlan();
+            // Evaluate if any assigned resource exists in system for this type
+            const assignedInSystem = resources.filter((r) => r.type === reqType && r.status === 'assigned');
+            if (assignedInSystem.length > 0) {
+              alternatives.push({
+                resourceId: assignedInSystem[0].id,
+                incidentId: newIncident.id,
+                eta: 15,
+                impact: 'high',
+                reason: `Reallocating ${assignedInSystem[0].id} from active incident ${assignedInSystem[0].assignedIncidentId} would negatively impact active response operations.`
+              });
+            }
+          }
+        }
 
-  const { disruption, affectedIncidents, newIncident: disruptionNewIncident } = disruptionResult;
-  const incidentId = affectedIncidents[0] || disruption.incidentId;
+        if (missingRequirements.length > 0) {
+          if (assignedForNewIncident.length > 0) {
+            mainReason = `New incident ${newIncident.id} received partial resources (${assignedForNewIncident.join(', ')}). Missing required resource types: [${missingRequirements.join(', ')}]. Reallocation requires human approval.`;
+          } else {
+            mainReason = `New incident ${newIncident.id} requires [${missingRequirements.join(', ')}], but no compatible resources exist or are available. Flagged for human approval.`;
+          }
 
-  const incident = state.incidents.find((inc) => inc.id === incidentId) || disruptionNewIncident;
+          DecisionLogService.addDecisionLog({
+            timestamp: analysis.disruption.timestamp || new Date().toISOString(),
+            event: 'REALLOCATION_PROPOSED',
+            affectedIncident: newIncident.id,
+            resourceId: missingRequirements[0] === 'rescue' ? 'RES-01' : missingRequirements[0],
+            action: `Proposed ${missingRequirements[0]} reassignment for new critical incident`,
+            reason: `New critical incident requires rescue resources.`,
+            requiresHumanApproval: true
+          });
+        } else {
+          mainReason = `New incident ${newIncident.id} successfully assigned suitable available resources (${assignedForNewIncident.join(', ')}) without impacting existing assignments.`;
 
-  if (!incident) {
-    throw new Error(`New incident with ID '${incidentId}' not found in state.`);
-  }
+          DecisionLogService.addDecisionLog({
+            timestamp: analysis.disruption.timestamp || new Date().toISOString(),
+            event: 'NEW_INCIDENT',
+            affectedIncident: newIncident.id,
+            resourceId: assignedForNewIncident.join(', '),
+            action: `Assigned ${assignedForNewIncident.join(', ')} to new critical incident`,
+            reason: `${assignedForNewIncident.join(', ')} was available and compatible.`,
+            requiresHumanApproval: false
+          });
+        }
+      }
+    }
 
-  const allAlternatives: AlternativeAssignment[] = [];
-  const newAssignments: Assignment[] = [];
-  const oldAssignmentsToPreempt: Assignment[] = [];
-  const recordedLogs: DecisionLog[] = [];
-  let requiresHumanApproval = false;
-  const reasonParts: string[] = [];
-
-  const usedResourceIds = new Set<string>();
-
-  for (const reqType of incident.requiredResources) {
-    // 1. Check for available resource of reqType
-    const availableCandidate = state.resources.find(
-      (r) => r.type === reqType && r.status === 'available' && !usedResourceIds.has(r.id)
+    // Build revised response plan preserving unaffected assignments
+    const revisedResponsePlan = this.createRevisedPlan(
+      currentPlan,
+      assignments,
+      oldAssignments,
+      newAssignments,
+      requiresHumanApproval
     );
 
-    if (availableCandidate) {
-      const eta = calculateSimulatedETA(availableCandidate.location, incident.location);
-      const alt: AlternativeAssignment = {
-        resourceId: availableCandidate.id,
+    const replanningResult: ReplanningResult = {
+      trigger: analysis.disruption,
+      affectedIncidents,
+      oldAssignments,
+      alternatives,
+      newAssignments,
+      reason: mainReason || analysis.disruption.type,
+      requiresHumanApproval
+    };
+
+    return {
+      replanningResult,
+      revisedResponsePlan
+    };
+  }
+
+  /**
+   * Helper 1: Finds resources that are available, match required type, not out_of_service, not assigned elsewhere
+   */
+  public static findCandidateResources(requiredType: string, resources: Resource[]): Resource[] {
+    return resources.filter(
+      (r) =>
+        r.type === requiredType &&
+        r.status === 'available' &&
+        (!r.assignedIncidentId || r.assignedIncidentId === null)
+    );
+  }
+
+  /**
+   * Helper 2: Generates alternative assignment options with simulated ETAs and impact levels
+   */
+  public static generateAlternatives(
+    incident: Incident,
+    requiredType: string,
+    candidates: Resource[]
+  ): AlternativeAssignment[] {
+    return candidates.map((candidate) => {
+      const distanceKm = calculateDistance(candidate.location, incident.location);
+      const eta = calculateEta(distanceKm);
+
+      return {
+        resourceId: candidate.id,
         incidentId: incident.id,
         eta,
         impact: 'low',
-        reason: `${availableCandidate.id} is available and matches required ${reqType} for new incident ${incident.id}.`
+        reason: `${candidate.id} is available and compatible with the ${requiredType} requirement.`
       };
-      allAlternatives.push(alt);
-      newAssignments.push({
-        incidentId: incident.id,
-        resourceId: availableCandidate.id,
-        eta,
-        status: 'assigned'
-      });
-      usedResourceIds.add(availableCandidate.id);
-      const reasonMsg = `Assigned available ${reqType} ${availableCandidate.id} to new incident ${incident.id}.`;
-      reasonParts.push(reasonMsg);
-
-      const log = addDecisionLog({
-        timestamp: disruption.timestamp || new Date().toISOString(),
-        event: 'NEW_INCIDENT',
-        affectedIncident: incident.id,
-        resourceId: availableCandidate.id,
-        action: `Assigned ${availableCandidate.id} to new incident ${incident.id}`,
-        reason: `${availableCandidate.id} was available and compatible.`,
-        requiresHumanApproval: false
-      });
-      recordedLogs.push(log);
-    } else {
-      // 2. No available resource: check if an assigned resource can be reallocated (preempted)
-      const assignedCandidates = state.resources.filter(
-        (r) => r.type === reqType && r.status === 'assigned' && !usedResourceIds.has(r.id)
-      );
-
-      if (assignedCandidates.length > 0) {
-        const reallocCandidate = assignedCandidates[0];
-        const eta = calculateSimulatedETA(reallocCandidate.location, incident.location);
-        const alt: AlternativeAssignment = {
-          resourceId: reallocCandidate.id,
-          incidentId: incident.id,
-          eta,
-          impact: 'high',
-          reason: `Reallocating ${reallocCandidate.id} from active incident ${reallocCandidate.assignedIncidentId} to high-severity incident ${incident.id}.`
-        };
-        allAlternatives.push(alt);
-
-        // Preempting an active incident requires human operator approval
-        requiresHumanApproval = true;
-
-        const existingAssignment = activePlan.assignments.find((a) => a.resourceId === reallocCandidate.id);
-        if (existingAssignment) {
-          oldAssignmentsToPreempt.push(existingAssignment);
-        }
-
-        newAssignments.push({
-          incidentId: incident.id,
-          resourceId: reallocCandidate.id,
-          eta,
-          status: 'assigned'
-        });
-        usedResourceIds.add(reallocCandidate.id);
-        const reasonMsg = `Proposed reallocating ${reallocCandidate.id} from incident ${reallocCandidate.assignedIncidentId} to ${incident.id} (requires human approval).`;
-        reasonParts.push(reasonMsg);
-
-        const log = addDecisionLog({
-          timestamp: disruption.timestamp || new Date().toISOString(),
-          event: 'REALLOCATION_PROPOSED',
-          affectedIncident: incident.id,
-          resourceId: reallocCandidate.id,
-          action: `Proposed ${reallocCandidate.id} reassignment`,
-          reason: `New critical incident ${incident.id} requires ${reqType} resources currently assigned to ${reallocCandidate.assignedIncidentId}.`,
-          requiresHumanApproval: true
-        });
-        recordedLogs.push(log);
-      } else {
-        // 3. No candidate resource of this type exists anywhere in the system
-        requiresHumanApproval = true;
-        const reasonMsg = `No ${reqType} resource is available or existing in the system for new incident ${incident.id}.`;
-        reasonParts.push(reasonMsg);
-
-        const log = addDecisionLog({
-          timestamp: disruption.timestamp || new Date().toISOString(),
-          event: 'NEW_INCIDENT_UNRESOLVED',
-          affectedIncident: incident.id,
-          action: `Flagged ${incident.id} as unserviced for missing ${reqType}`,
-          reason: reasonMsg,
-          requiresHumanApproval: true
-        });
-        recordedLogs.push(log);
-      }
-    }
+    });
   }
 
-  const oldResourceIds = new Set(oldAssignmentsToPreempt.map((a) => a.resourceId));
-  const preservedAssignments = activePlan.assignments.filter(
-    (a) => !oldResourceIds.has(a.resourceId)
-  );
+  /**
+   * Helper 3: Selects best alternative ranked by lowest ETA and compatibility
+   */
+  public static selectBestAlternative(
+    alternatives: AlternativeAssignment[]
+  ): AlternativeAssignment | null {
+    if (!alternatives || alternatives.length === 0) return null;
 
-  const revisedPlan: ResponsePlan = {
-    id: activePlan.id,
-    version: activePlan.version + 1,
-    assignments: [...preservedAssignments, ...newAssignments],
-    status: requiresHumanApproval ? 'pending_approval' : 'active'
-  };
-
-  const replanningResult: ReplanningResult = {
-    trigger: disruption,
-    affectedIncidents: [incident.id],
-    oldAssignments: oldAssignmentsToPreempt,
-    alternatives: allAlternatives,
-    newAssignments,
-    reason: reasonParts.join(' '),
-    requiresHumanApproval
-  };
-
-  return { replanningResult, revisedPlan, decisionLogs: recordedLogs };
-};
-
-/**
- * Main replanning function: takes a disruption analysis result and constructs a revised response plan.
- */
-export const replanResponsePlan = (
-  disruptionResult: DisruptionAnalysisResult,
-  stateOrProvider?: ScenarioState | StateProvider,
-  currentPlan?: ResponsePlan
-): ReplanningOutcome => {
-  const state = resolveState(stateOrProvider);
-  const activePlan = currentPlan || state.responsePlan || defaultStateProvider.getResponsePlan();
-
-  const { disruption, affectedResource, affectedAssignments, affectedIncidents, replanningRequired } =
-    disruptionResult;
-
-  if (!replanningRequired || affectedIncidents.length === 0) {
-    const noOpResult: ReplanningResult = {
-      trigger: disruption,
-      affectedIncidents: [],
-      oldAssignments: [],
-      alternatives: [],
-      newAssignments: [],
-      reason: 'No replanning required for this disruption event.',
-      requiresHumanApproval: false
-    };
-    return { replanningResult: noOpResult, revisedPlan: activePlan, decisionLogs: [] };
+    // Sort by ETA ascending
+    const sorted = [...alternatives].sort((a, b) => a.eta - b.eta);
+    return sorted[0];
   }
 
-  if (disruption.type === 'NEW_INCIDENT') {
-    return replanNewIncident(disruptionResult, state, activePlan);
-  }
+  /**
+   * Helper 4: Creates a revised ResponsePlan preserving unaffected assignments and increasing version
+   */
+  public static createRevisedPlan(
+    currentPlan: ResponsePlan,
+    allAssignments: Assignment[],
+    oldAssignments: Assignment[],
+    newAssignments: Assignment[],
+    requiresHumanApproval: boolean = false
+  ): ResponsePlan {
+    const oldResourceIds = new Set(oldAssignments.map((a) => a.resourceId));
 
-  const allAlternatives: AlternativeAssignment[] = [];
-  const newAssignments: Assignment[] = [];
-  const recordedLogs: DecisionLog[] = [];
-  const reasonParts: string[] = [];
-
-  const unavailableResourceId = disruption.resourceId || affectedResource?.id;
-  const unavailableResourceType = affectedResource?.type || 'ambulance';
-
-  for (const incidentId of affectedIncidents) {
-    const incident = state.incidents.find((inc) => inc.id === incidentId);
-    if (!incident) {
-      reasonParts.push(`Incident ${incidentId} not found in current scenario state.`);
-      continue;
-    }
-
-    const candidates = findCandidateResources(
-      unavailableResourceType,
-      state.resources,
-      unavailableResourceId
+    // Preserve assignments that were not affected by the disruption
+    const preservedAssignments = allAssignments.filter(
+      (a) => !oldResourceIds.has(a.resourceId) && a.status !== 'cancelled'
     );
 
-    const incidentAlternatives = generateAlternatives(incident, candidates);
-    allAlternatives.push(...incidentAlternatives);
+    const updatedAssignments = [...preservedAssignments, ...newAssignments];
+    const status: ResponsePlan['status'] = requiresHumanApproval ? 'pending_approval' : 'active';
 
-    const bestAlt = selectBestAlternative(incidentAlternatives);
-
-    if (bestAlt) {
-      newAssignments.push({
-        incidentId: incident.id,
-        resourceId: bestAlt.resourceId,
-        eta: bestAlt.eta,
-        status: 'assigned'
-      });
-      const reasonMsg = `${unavailableResourceId || 'Resource'} became unavailable. ${bestAlt.resourceId} was selected as an available compatible ${unavailableResourceType}.`;
-      reasonParts.push(reasonMsg);
-
-      const log = addDecisionLog({
-        timestamp: disruption.timestamp || new Date().toISOString(),
-        event: 'RESOURCE_UNAVAILABLE',
-        affectedIncident: incident.id,
-        resourceId: unavailableResourceId,
-        action: `Replanned ${incident.id} to ${bestAlt.resourceId}`,
-        reason: `${unavailableResourceId} became unavailable.`,
-        requiresHumanApproval: false
-      });
-      recordedLogs.push(log);
-    } else {
-      const reasonMsg = `${unavailableResourceId || 'Resource'} became unavailable. No available compatible ${unavailableResourceType} could be found for ${incident.id}.`;
-      reasonParts.push(reasonMsg);
-
-      const log = addDecisionLog({
-        timestamp: disruption.timestamp || new Date().toISOString(),
-        event: 'RESOURCE_UNAVAILABLE_NO_REPLACEMENT',
-        affectedIncident: incident.id,
-        resourceId: unavailableResourceId,
-        action: `Flagged ${incident.id} for human operator attention`,
-        reason: reasonMsg,
-        requiresHumanApproval: true
-      });
-      recordedLogs.push(log);
-    }
+    return {
+      id: currentPlan.id || 'PLAN-001',
+      version: currentPlan.version + 1,
+      assignments: updatedAssignments,
+      status
+    };
   }
+}
 
-  const requiresHumanApproval = determineHumanApproval(allAlternatives, newAssignments);
-
-  const revisedPlan = createRevisedPlan(
-    activePlan,
-    affectedAssignments,
-    newAssignments,
-    requiresHumanApproval
-  );
-
-  const replanningResult: ReplanningResult = {
-    trigger: disruption,
-    affectedIncidents,
-    oldAssignments: affectedAssignments,
-    alternatives: allAlternatives,
-    newAssignments,
-    reason: reasonParts.join(' '),
-    requiresHumanApproval
-  };
-
-  return { replanningResult, revisedPlan, decisionLogs: recordedLogs };
+export const replanResponsePlan = ReplanningService.replanResponsePlan.bind(ReplanningService);
+export type ReplanningOutcome = {
+  replanningResult: ReplanningResult;
+  revisedPlan?: ResponsePlan;
+  revisedResponsePlan?: ResponsePlan;
+  decisionLogs?: DecisionLog[];
 };

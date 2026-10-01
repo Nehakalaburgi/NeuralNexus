@@ -1,7 +1,7 @@
 /**
- * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * Top Navigation Header & Telemetry Dashboard Bar
- * Displays brand identity, live agent heartbeat, system metrics, map style switcher, and mock/live WS toggle.
+ * ResQAlloc Emergency Operations Center (EOC)
+ * Architectural Flight Deck Navigation & Mission Telemetry
+ * Craft: Editorial Brutalism & Cybernetic Operations Command
  */
 
 import React from 'react';
@@ -11,14 +11,15 @@ import {
   Truck,
   Wifi,
   WifiOff,
-  Cpu,
   Clock,
   RefreshCw,
   Moon,
   Satellite,
   Map as MapIcon,
-  Activity,
   Compass,
+  Layers,
+  Terminal,
+  Activity,
 } from 'lucide-react';
 import { WorldState, MapStyleId } from '../../types/emergency';
 
@@ -59,113 +60,108 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
   const systemStatus = worldState?.systemStatus || 'ONLINE';
 
-  // Status indicator styling
-  let statusBadgeClass = 'bg-cyan-950/80 border-cyan-500/60 text-cyan-400';
-  let statusDotClass = 'bg-cyan-400 animate-pulse';
-  let statusText = 'ONLINE | AGENTS ACTIVE';
+  // Status configuration - High contrast, zero muddy gradients
+  let statusBadgeStyle = 'border-[#00F0FF]/40 text-[#00F0FF] bg-[#00F0FF]/5';
+  let statusDotStyle = 'bg-[#00F0FF] shadow-[0_0_8px_#00F0FF]';
+  let statusLabel = 'ACTIVE // DISPATCH RUNTIME';
 
   if (systemStatus === 'DISRUPTED') {
-    statusBadgeClass = 'bg-red-950/80 border-red-500/80 text-red-400';
-    statusDotClass = 'bg-red-500 animate-ping';
-    statusText = 'DISRUPTED | REASSESSING';
+    statusBadgeStyle = 'border-[#FF2A3B] text-[#FF2A3B] bg-[#FF2A3B]/10';
+    statusDotStyle = 'bg-[#FF2A3B] shadow-[0_0_10px_#FF2A3B] animate-ping';
+    statusLabel = 'DISRUPTED // CRITICAL REALLOCATION';
   } else if (systemStatus === 'REASSESSING') {
-    statusBadgeClass = 'bg-amber-950/80 border-amber-500/80 text-amber-400';
-    statusDotClass = 'bg-amber-400 animate-pulse';
-    statusText = 'REALLOCATING RESOURCES';
+    statusBadgeStyle = 'border-[#F59E0B] text-[#F59E0B] bg-[#F59E0B]/10';
+    statusDotStyle = 'bg-[#F59E0B] shadow-[0_0_8px_#F59E0B] animate-pulse';
+    statusLabel = 'EVAL // ALGORITHMIC BYPASS';
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-14 px-4 tactical-glass border-b border-slate-800 flex items-center justify-between pointer-events-auto select-none">
-      {/* 1. Brand Logo & System Subtitle */}
+    <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-[#0A0C10]/95 backdrop-blur-md border-b border-[#1E2532] flex items-center justify-between px-4 pointer-events-auto select-none">
+      {/* 1. Monolithic Brand & Grid Coordinate */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-950/90 border border-cyan-400/80 glow-cyan">
-          <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+        <div className="relative w-8 h-8 flex items-center justify-center bg-[#13171F] border border-[#1E2532]">
+          <span className="absolute -top-1 -left-1 text-[8px] font-mono text-[#00F0FF] leading-none">+</span>
+          <Radio className="w-4 h-4 text-[#00F0FF]" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-black tracking-wider text-slate-100 uppercase">
-              ResQ<span className="text-cyan-400">Alloc</span>
+
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display font-black text-sm tracking-tight text-[#EDECE8] uppercase">
+              ResQ<span className="text-[#00F0FF]">Alloc</span>
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 text-slate-400">
-              v2.4-Bengaluru
+            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 bg-[#13171F] border border-[#1E2532] text-[#7A8394] tracking-wider uppercase">
+              SECTOR-BLR // v2.4
             </span>
           </div>
-          <div className="text-[9px] font-mono text-slate-400 flex items-center gap-1.5">
-            <span>AI Autonomous Multi-Agent Dispatch & Reallocation Grid</span>
+          <span className="text-[9px] font-mono text-[#7A8394] tracking-wider uppercase">
+            Autonomous Dispatch & Preemption Matrix
+          </span>
+        </div>
+      </div>
+
+      {/* 2. Tactical Telemetry HUD */}
+      <div className="hidden xl:flex items-center gap-2">
+        {/* Real-time System Pulse */}
+        <div className={`flex items-center gap-2 px-3 py-1 border text-[11px] font-mono font-bold tracking-wider uppercase ${statusBadgeStyle}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDotStyle}`} />
+          <span>{statusLabel}</span>
+        </div>
+
+        {/* Telemetry Monolith Data Readouts */}
+        <div className="flex items-center bg-[#13171F] border border-[#1E2532] divide-x divide-[#1E2532] text-[11px] font-mono">
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-[#FF2A3B]" />
+            <span className="text-[#7A8394] uppercase tracking-wider text-[10px]">INCIDENTS:</span>
+            <span className="font-bold text-[#FF2A3B]">{metrics.activeIncidents}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <Truck className="w-3.5 h-3.5 text-[#00F0FF]" />
+            <span className="text-[#7A8394] uppercase tracking-wider text-[10px]">FLEET AVAIL:</span>
+            <span className="font-bold text-[#EDECE8]">
+              {metrics.availableResources}<span className="text-[#7A8394]">/{metrics.totalFleet}</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <Clock className="w-3.5 h-3.5 text-[#F59E0B]" />
+            <span className="text-[#7A8394] uppercase tracking-wider text-[10px]">AVG TRANSIT:</span>
+            <span className="font-bold text-[#F59E0B]">{metrics.avgResponseTimeMin}m</span>
           </div>
         </div>
       </div>
 
-      {/* 2. System Status & Real-Time Pulse */}
-      <div className="hidden xl:flex items-center gap-4">
-        {/* Heartbeat Badge */}
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold ${statusBadgeClass}`}>
-          <span className={`w-2 h-2 rounded-full ${statusDotClass}`}></span>
-          <span>{statusText}</span>
-        </div>
-
-        {/* Live Metrics Ticker */}
-        <div className="flex items-center gap-3 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-mono">
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-slate-500">Active:</span>
-            <span className="font-bold text-red-400">{metrics.activeIncidents}</span>
-          </div>
-          <div className="w-px h-3.5 bg-slate-800" />
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Truck className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-500">Fleet Avail:</span>
-            <span className="font-bold text-cyan-400">
-              {metrics.availableResources}/{metrics.totalFleet}
-            </span>
-          </div>
-          <div className="w-px h-3.5 bg-slate-800" />
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-slate-500">Avg Latency:</span>
-            <span className="font-bold text-amber-400">{metrics.avgResponseTimeMin}m</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Controls, Map Style Switcher, WebSocket Indicator, & Mode Switcher */}
-      <div className="flex items-center gap-3">
-        {/* Map Style Switcher Group */}
+      {/* 3. Operational Switches & Live Connection Hardware Toggle */}
+      <div className="flex items-center gap-2.5">
+        {/* Map Cartography Switcher */}
         {onSelectMapStyle && (
-          <div className="hidden lg:flex items-center p-1 rounded-lg bg-slate-950/80 border border-slate-800 gap-1 text-[10px] font-mono font-bold">
-            <button
-              onClick={() => onSelectMapStyle('dark')}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                activeMapStyle === 'dark'
-                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Moon className="w-3 h-3" />
-              <span>Dark</span>
-            </button>
-            <button
-              onClick={() => onSelectMapStyle('satellite')}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                activeMapStyle === 'satellite'
-                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Satellite className="w-3 h-3" />
-              <span>Satellite</span>
-            </button>
-            <button
-              onClick={() => onSelectMapStyle('streets')}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                activeMapStyle === 'streets'
-                  ? 'bg-cyan-900/80 text-cyan-300 border border-cyan-500/60'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <MapIcon className="w-3 h-3" />
-              <span>Streets</span>
-            </button>
+          <div className="hidden lg:flex items-center bg-[#13171F] border border-[#1E2532] p-0.5 text-[10px] font-mono font-bold">
+            <div className="px-2 py-0.5 text-[#7A8394] flex items-center gap-1 border-r border-[#1E2532]">
+              <Layers className="w-3 h-3 text-[#00F0FF]" />
+              <span className="text-[9px] tracking-wider uppercase">LAYER</span>
+            </div>
+            {(['dark', 'satellite', 'streets'] as const).map((styleId) => {
+              const isActive = activeMapStyle === styleId;
+              const icons = {
+                dark: <Moon className="w-2.5 h-2.5" />,
+                satellite: <Satellite className="w-2.5 h-2.5" />,
+                streets: <MapIcon className="w-2.5 h-2.5" />,
+              };
+              return (
+                <button
+                  key={styleId}
+                  onClick={() => onSelectMapStyle(styleId)}
+                  className={`flex items-center gap-1 px-2 py-1 cursor-pointer transition-all uppercase tracking-wider ${
+                    isActive
+                      ? 'bg-[#00F0FF]/15 text-[#00F0FF] border-b-2 border-[#00F0FF]'
+                      : 'text-[#7A8394] hover:text-[#EDECE8]'
+                  }`}
+                >
+                  {icons[styleId]}
+                  <span>{styleId}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -174,72 +170,79 @@ export const TopNav: React.FC<TopNavProps> = ({
           <button
             onClick={onToggle3DView}
             title="Toggle 3D Tactical Pitch & Bearing Perspective"
-            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all ${
               is3DView
-                ? 'bg-indigo-950/80 text-indigo-300 border-indigo-500/80 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
-                : 'bg-slate-900/80 text-slate-500 border-slate-800 hover:text-slate-300'
+                ? 'bg-[#C084FC]/15 text-[#C084FC] border-[#C084FC]/60 shadow-[0_0_10px_rgba(192,132,252,0.25)]'
+                : 'bg-[#13171F] text-[#7A8394] border-[#1E2532] hover:text-[#EDECE8]'
             }`}
           >
-            <Compass className={`w-3 h-3 ${is3DView ? 'text-indigo-400' : 'text-slate-500'}`} />
+            <Compass className={`w-3 h-3 ${is3DView ? 'text-[#C084FC]' : 'text-[#7A8394]'}`} />
             <span>3D VIEW</span>
           </button>
         )}
 
-        {/* Traffic Overlay Toggle Button */}
+        {/* Real-time Traffic Overlap Switch */}
         {onToggleTrafficOverlay && (
           <button
             onClick={onToggleTrafficOverlay}
-            title="Toggle Real-Time Traffic Congestion Overlay"
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+            title="Toggle Arterial Congestion Corridors"
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all ${
               showTrafficOverlay
-                ? 'bg-orange-950/80 text-orange-300 border-orange-500/80 shadow-[0_0_10px_rgba(249,115,22,0.4)]'
-                : 'bg-slate-900/80 text-slate-500 border-slate-800 hover:text-slate-300'
+                ? 'bg-[#FF5500]/15 text-[#FF5500] border-[#FF5500]/60 shadow-[0_0_10px_rgba(255,85,0,0.25)]'
+                : 'bg-[#13171F] text-[#7A8394] border-[#1E2532] hover:text-[#EDECE8]'
             }`}
           >
-            <Activity className={`w-3 h-3 ${showTrafficOverlay ? 'text-orange-400 animate-pulse' : 'text-slate-500'}`} />
+            <Activity className={`w-3 h-3 ${showTrafficOverlay ? 'text-[#FF5500] animate-pulse' : 'text-[#7A8394]'}`} />
             <span>TRAFFIC</span>
           </button>
         )}
 
-        {/* Connection Status Pill */}
-        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 text-slate-400">
-          {isConnected ? (
+        {/* Hardware Status Pill */}
+        <div className="hidden md:flex items-center gap-2 text-[10px] font-mono px-2.5 py-1 bg-[#13171F] border border-[#1E2532]">
+          {isMockMode ? (
             <>
-              <Wifi className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400 font-semibold">FEED SYNC</span>
-              <span className="text-slate-600">|</span>
-              <span>{lastHeartbeat ?? 'Live'}</span>
+              <Radio className="w-3 h-3 text-[#F59E0B]" />
+              <span className="text-[#F59E0B] font-semibold tracking-wider uppercase">MOCK SIMULATION</span>
+              <span className="text-[#1E2532]">|</span>
+              <span className="text-[#7A8394]">{lastHeartbeat ?? 'OFFLINE'}</span>
+            </>
+          ) : isConnected ? (
+            <>
+              <Wifi className="w-3 h-3 text-[#10B981]" />
+              <span className="text-[#10B981] font-semibold tracking-wider uppercase">LIVE AUTHORITY</span>
+              <span className="text-[#1E2532]">|</span>
+              <span className="text-[#EDECE8]">{lastHeartbeat ?? 'LIVE'}</span>
             </>
           ) : (
             <>
-              <WifiOff className="w-3 h-3 text-red-400 animate-pulse" />
-              <span className="text-red-400 font-semibold">WS DISCONNECTED</span>
+              <WifiOff className="w-3 h-3 text-[#FF2A3B] animate-pulse" />
+              <span className="text-[#FF2A3B] font-semibold tracking-wider uppercase">DISCONNECTED</span>
             </>
           )}
         </div>
 
-        {/* Reset Grid Benchmark Shortcut */}
+        {/* State Re-Zero Button */}
         {onResetState && (
           <button
             onClick={onResetState}
-            title="Reset Grid to Baseline"
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+            title="Re-Zero Simulation Baseline"
+            className="p-1.5 bg-[#13171F] hover:bg-[#1E2532] border border-[#1E2532] text-[#7A8394] hover:text-[#00F0FF] transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         )}
 
-        {/* Mode Toggle Button */}
+        {/* Tactile Hardware Mode Rocker Switch */}
         <button
           onClick={onToggleMockMode}
-          className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all duration-200 border cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider cursor-pointer border transition-all active:translate-y-0.5 ${
             isMockMode
-              ? 'bg-amber-950/60 border-amber-500/80 text-amber-300 hover:bg-amber-900/60'
-              : 'bg-cyan-950/60 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900/60'
+              ? 'bg-[#F59E0B]/10 border-[#F59E0B]/80 text-[#F59E0B] hover:bg-[#F59E0B]/20'
+              : 'bg-[#00F0FF]/10 border-[#00F0FF]/80 text-[#00F0FF] hover:bg-[#00F0FF]/20 shadow-[0_0_12px_rgba(0,240,255,0.2)]'
           }`}
         >
-          <Cpu className="w-3.5 h-3.5" />
-          <span>{isMockMode ? 'MOCK MODE' : 'LIVE WS'}</span>
+          <Terminal className="w-3 h-3" />
+          <span>{isMockMode ? 'MODE: MOCK' : 'MODE: LIVE'}</span>
         </button>
       </div>
     </header>
