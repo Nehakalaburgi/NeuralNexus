@@ -65,24 +65,24 @@ export const TopNav: React.FC<TopNavProps> = ({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-[#0A0C10]/95 backdrop-blur-md border-b border-[#1E2532] flex items-center justify-between px-5 pointer-events-auto select-none">
+    <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-[#0A0C10]/95 backdrop-blur-md border-b border-[#1E2532] flex items-center justify-between px-4 pointer-events-auto select-none">
       {/* 1. Monolithic Brand & Grid Coordinate */}
-      <div className="flex items-center gap-3.5">
-        <div className="relative w-9 h-9 flex items-center justify-center bg-[#13171F] border border-[#1E2532]">
+      <div className="flex items-center gap-3">
+        <div className="relative w-8 h-8 flex items-center justify-center bg-[#13171F] border border-[#1E2532]">
           <span className="absolute -top-1 -left-1 text-[8px] font-mono text-[#00F0FF] leading-none">+</span>
-          <Radio className="w-4.5 h-4.5 text-[#00F0FF]" />
+          <Radio className="w-4 h-4 text-[#00F0FF]" />
         </div>
 
         <div className="flex flex-col">
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-display font-black text-lg sm:text-xl tracking-tight text-[#EDECE8] uppercase leading-none">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display font-black text-sm tracking-tight text-[#EDECE8] uppercase">
               ResQ<span className="text-[#00F0FF]">Alloc</span>
             </span>
-            <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-[#13171F] border border-[#1E2532] text-[#7A8394] tracking-wider uppercase">
+            <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 bg-[#13171F] border border-[#1E2532] text-[#7A8394] tracking-wider uppercase">
               SECTOR-BLR // v2.4
             </span>
           </div>
-          <span className="text-[9.5px] font-mono text-[#7A8394] tracking-wider uppercase mt-0.5">
+          <span className="text-[9px] font-mono text-[#7A8394] tracking-wider uppercase">
             Autonomous Dispatch & Preemption Matrix
           </span>
         </div>

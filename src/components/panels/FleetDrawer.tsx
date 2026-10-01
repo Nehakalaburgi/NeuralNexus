@@ -125,7 +125,7 @@ export const FleetDrawer: React.FC<FleetDrawerProps> = ({
     <aside
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed right-4 top-20 bottom-60 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
+      className={`fixed right-4 top-18 bottom-60 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
         isHovered ? 'w-[390px]' : 'w-12'
       }`}
     >

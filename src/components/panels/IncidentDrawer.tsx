@@ -121,7 +121,7 @@ export const IncidentDrawer: React.FC<IncidentDrawerProps> = ({
     <aside
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed left-4 top-20 bottom-6 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
+      className={`fixed left-4 top-18 bottom-6 z-20 pointer-events-auto select-none transition-all duration-300 ease-in-out ${
         isHovered ? 'w-[410px]' : 'w-12'
       }`}
     >
