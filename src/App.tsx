@@ -53,7 +53,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-[#0b0f19] text-slate-100 select-none">
+    <main className="relative w-screen h-screen overflow-hidden bg-[#0A0C10] text-[#EDECE8] select-none font-sans">
       {/* 1. Full-Screen Geospatial Canvas (z-0) */}
       <MapView
         worldState={worldState}

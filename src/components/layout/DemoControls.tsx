@@ -1,7 +1,7 @@
 /**
- * ResQAlloc Emergency Control Room & AI Dynamic Resource Reallocation System
- * DemoControls: Floating Bottom Dock for Instant Hackathon Pitch Simulation Triggers
- * Allows seamless switching between Baseline Ingestion, Disruption Injection, Grid Reset, and Vehicle Speed.
+ * ResQAlloc Emergency Operations Center (EOC)
+ * Pitch Dock: Tactical Dispatch Switchboard
+ * Craft: Editorial Brutalism & Physical Control-Room Switches
  */
 
 import React from 'react';
@@ -44,80 +44,80 @@ export const DemoControls: React.FC<DemoControlsProps> = ({
 
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto select-none">
-      <div className="p-1.5 rounded-2xl tactical-glass border border-slate-700/80 shadow-[0_10px_35px_rgba(0,0,0,0.7)] flex items-center gap-2">
-        {/* Pitch Dock Label */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono font-bold text-slate-400 border-r border-slate-800">
-          <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-          <span>PITCH DOCK:</span>
+      <div className="tactical-surface-glass border border-[#1E2532] shadow-[0_12px_40px_rgba(0,0,0,0.85)] flex items-stretch p-1 gap-1.5 corner-crosshair">
+        {/* Switchboard Console Label */}
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0A0C10] border border-[#1E2532] text-[10px] font-mono font-bold text-[#7A8394] tracking-widest uppercase">
+          <Sliders className="w-3 h-3 text-[#00F0FF]" />
+          <span>CONSOLE:</span>
         </div>
 
-        {/* 1. Normal Ingestion Scenario */}
+        {/* 1. Baseline Normal Dispatch */}
         <button
           onClick={onNormalIngestion}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer border ${
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold tracking-wider uppercase transition-all duration-150 cursor-pointer border active:translate-y-0.5 ${
             isNormal
-              ? 'bg-cyan-950/90 text-cyan-300 border-cyan-400/80 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
-              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700'
+              ? 'bg-[#00F0FF]/15 text-[#00F0FF] border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.3)]'
+              : 'bg-[#13171F] text-[#7A8394] hover:text-[#EDECE8] border-[#1E2532] hover:border-[#7A8394]'
           }`}
         >
-          <Play className="w-3.5 h-3.5 text-cyan-400" />
-          <span>1. Normal Dispatch</span>
+          <Play className="w-3.5 h-3.5 text-[#00F0FF]" />
+          <span>01 // BASELINE DISPATCH</span>
         </button>
 
-        {/* 2. Simulate Traffic Jam & Dynamic Detour */}
+        {/* 2. Congestion Detour Bypass */}
         <button
           onClick={onInjectTrafficJam}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer border ${
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold tracking-wider uppercase transition-all duration-150 cursor-pointer border active:translate-y-0.5 ${
             isTrafficActive
-              ? 'bg-orange-950/90 text-orange-300 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] animate-pulse'
-              : 'bg-slate-900/80 text-slate-400 hover:text-orange-400 border-slate-800 hover:border-orange-900/60'
+              ? 'bg-[#FF5500]/15 text-[#FF5500] border-[#FF5500] shadow-[0_0_15px_rgba(255,85,0,0.35)] animate-pulse'
+              : 'bg-[#13171F] text-[#7A8394] hover:text-[#FF5500] border-[#1E2532] hover:border-[#FF5500]/50'
           }`}
         >
-          <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
-          <span>2. Traffic Jam & Detour</span>
+          <AlertTriangle className="w-3.5 h-3.5 text-[#FF5500]" />
+          <span>02 // TRAFFIC DETOUR</span>
         </button>
 
-        {/* 3. Inject Sev-5 Disruption Scenario */}
+        {/* 3. Severe Preemption Disruption */}
         <button
           onClick={onInjectDisruption}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer border ${
+          className={`flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold tracking-wider uppercase transition-all duration-150 cursor-pointer border active:translate-y-0.5 ${
             isDisrupted
-              ? 'bg-red-950/90 text-red-300 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse'
-              : 'bg-slate-900/80 text-slate-400 hover:text-red-400 border-slate-800 hover:border-red-900/60'
+              ? 'bg-[#FF2A3B]/15 text-[#FF2A3B] border-[#FF2A3B] shadow-[0_0_20px_rgba(255,42,59,0.4)] animate-pulse'
+              : 'bg-[#13171F] text-[#7A8394] hover:text-[#FF2A3B] border-[#1E2532] hover:border-[#FF2A3B]/50'
           }`}
         >
-          <Zap className="w-3.5 h-3.5 text-red-400" />
-          <span>3. Sev-5 Disruption</span>
+          <Zap className="w-3.5 h-3.5 text-[#FF2A3B]" />
+          <span>03 // SEV-5 CRITICAL PREEMPT</span>
           {hasPendingApproval && (
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-[#FF2A3B] animate-ping" />
           )}
         </button>
 
-        {/* 4. Reset Grid */}
+        {/* 4. Reset Switch */}
         <button
           onClick={onReset}
-          title="Reset simulation to initial baseline benchmark"
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer"
+          title="Reset grid simulation to initial baseline"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider bg-[#0A0C10] hover:bg-[#1E2532] text-[#7A8394] hover:text-[#EDECE8] border border-[#1E2532] transition-colors cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Reset</span>
+          <span className="hidden md:inline">RESET</span>
         </button>
 
-        {/* 5. Speed Control Tab */}
-        <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
-          <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 text-[10px] font-mono text-slate-400 font-bold uppercase">
-            <Gauge className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline text-slate-300">SPEED:</span>
+        {/* 5. Rotary Speed Selector Tab */}
+        <div className="flex items-center bg-[#0A0C10] border border-[#1E2532] divide-x divide-[#1E2532] ml-1">
+          <div className="hidden sm:flex items-center gap-1 px-2 py-1.5 text-[10px] font-mono font-bold text-[#7A8394] uppercase">
+            <Gauge className="w-3 h-3 text-[#00F0FF]" />
+            <span className="hidden md:inline text-[9px] tracking-wider">VELOCITY</span>
           </div>
           {[0.5, 1, 2, 4].map((speed) => (
             <button
               key={speed}
               onClick={() => onSpeedChange?.(speed)}
-              title={`Simulate vehicle velocity at ${speed}x real-time`}
-              className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all duration-200 cursor-pointer border ${
+              title={`Simulate fleet transit at ${speed}x real-time`}
+              className={`px-2.5 py-1.5 text-xs font-mono font-bold tracking-wider transition-all cursor-pointer ${
                 simulationSpeed === speed
-                  ? 'bg-cyan-950 text-cyan-300 border-cyan-400/90 shadow-[0_0_12px_rgba(6,182,212,0.45)]'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700'
+                  ? 'bg-[#00F0FF] text-[#0A0C10] font-black'
+                  : 'text-[#7A8394] hover:text-[#EDECE8] hover:bg-[#13171F]'
               }`}
             >
               {speed}x

@@ -514,11 +514,11 @@ export const MapView: React.FC<MapViewProps> = ({
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(11,15,25,0.4)_100%)] z-1" />
 
       {/* Floating Map Utility Bar: Style Switcher + Traffic Toggle (Top Right) */}
-      <div className="absolute top-18 right-20 z-10 pointer-events-auto flex items-center p-1 rounded-xl tactical-glass border border-slate-800/90 shadow-2xl backdrop-blur-md gap-2">
+      <div className="absolute top-18 right-20 z-10 pointer-events-auto flex items-center p-1 tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-2xl gap-2">
         {/* Style Switcher Group */}
         <div className="flex items-center gap-1">
-          <div className="px-2 py-1 text-[9px] font-mono text-slate-500 font-bold uppercase hidden sm:flex items-center gap-1 border-r border-slate-800/80 mr-1">
-            <Layers className="w-3 h-3 text-cyan-400" />
+          <div className="px-2 py-1 text-[9px] font-mono text-[#7A8394] font-bold uppercase hidden sm:flex items-center gap-1 border-r border-[#1E2532] mr-1">
+            <Layers className="w-3 h-3 text-[#00F0FF]" />
             <span>STYLE:</span>
           </div>
           {(['dark', 'satellite', 'streets'] as const).map((styleKey) => {
@@ -529,10 +529,10 @@ export const MapView: React.FC<MapViewProps> = ({
               <button
                 key={styleKey}
                 onClick={() => handleStyleChange(styleKey)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all duration-150 cursor-pointer border ${
                   isActive
-                    ? 'bg-cyan-950/90 text-cyan-300 border-cyan-400/80 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 border-transparent hover:border-slate-700'
+                    ? 'bg-[#00F0FF] text-[#0A0C10] font-black border-[#00F0FF] shadow-[0_0_10px_rgba(0,240,255,0.4)]'
+                    : 'bg-[#0D1017] text-[#7A8394] hover:text-[#EDECE8] border-[#1E2532] hover:bg-[#13171F]'
                 }`}
               >
                 {style.icon}
@@ -542,62 +542,62 @@ export const MapView: React.FC<MapViewProps> = ({
           })}
         </div>
 
-        <div className="w-px h-5 bg-slate-800" />
+        <div className="w-px h-5 bg-[#1E2532]" />
 
         {/* Traffic Overlay Toggle Button */}
         <button
           onClick={toggleTraffic}
           title="Toggle Real-Time Traffic Congestion Layer"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all duration-200 cursor-pointer border ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all duration-150 cursor-pointer border ${
             showTraffic
-              ? 'bg-orange-950/90 text-orange-300 border-orange-500/80 shadow-[0_0_12px_rgba(249,115,22,0.5)]'
-              : 'bg-slate-900/60 text-slate-500 hover:text-slate-300 border-transparent hover:border-slate-700'
+              ? 'bg-[#1f1105] text-[#FFA94D] border-[#FF6B00]/70'
+              : 'bg-[#0D1017] text-[#7A8394] hover:text-[#EDECE8] border-[#1E2532]'
           }`}
         >
-          <Activity className={`w-3.5 h-3.5 ${showTraffic ? 'text-orange-400 animate-pulse' : 'text-slate-500'}`} />
+          <Activity className={`w-3.5 h-3.5 ${showTraffic ? 'text-[#FF6B00] animate-pulse' : 'text-[#7A8394]'}`} />
           <span>TRAFFIC: {showTraffic ? 'ON' : 'OFF'}</span>
         </button>
       </div>
 
       {/* Tactical Route Network Legend Overlay (Top Left below Nav) */}
-      <div className="absolute top-18 left-20 z-10 pointer-events-none hidden md:flex flex-col gap-1.5 p-2.5 rounded-xl tactical-glass border border-slate-800/90 shadow-xl backdrop-blur-md max-w-[320px]">
-        <div className="text-[9.5px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-slate-800/80 pb-1">
-          <span>Active Fleet Corridors</span>
-          <span className="text-cyan-400">Live 60fps</span>
+      <div className="absolute top-18 left-16 z-10 pointer-events-none hidden md:flex flex-col gap-1.5 p-2.5 tactical-surface-glass border border-[#1E2532] corner-crosshair shadow-xl max-w-[320px]">
+        <div className="text-[9.5px] font-mono font-bold text-[#EDECE8] uppercase tracking-wider flex items-center justify-between border-b border-[#1E2532] pb-1">
+          <span className="font-display">FLEET CORRIDOR MATRIX</span>
+          <span className="text-[#00F0FF] text-[8.5px]">60 FPS</span>
         </div>
         <div className="space-y-1 text-[9px] font-mono">
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.9)]" />
-            <span className="text-blue-300 font-semibold">Travelled Vehicle Path (Solid Blue)</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-1 bg-[#2563EB]" />
+            <span className="text-[#93C5FD]">TRAVELED PATH [SOLID BLUE]</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1 border-t-2 border-dashed border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
-            <span className="text-blue-300 font-semibold">Upcoming Vehicle Path (Glowing Blue)</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-0.5 border-t border-dashed border-[#60A5FA]" />
+            <span className="text-[#93C5FD]">UPCOMING PATH [DASHED]</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.9)]" />
-            <span className="text-blue-300 font-medium">Ambulance Response Routes (Blue)</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-1 bg-[#3B82F6]" />
+            <span className="text-[#93C5FD]">AMBULANCE RESPONSE CORRIDOR</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.95)]" />
-            <span className="text-blue-300 font-medium">Fire Engine Response Corridor (Blue)</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-1 bg-[#2563EB]" />
+            <span className="text-[#93C5FD]">FIRE ENGINE CORRIDOR</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse" />
-            <span className="text-red-400 font-bold">Traffic Congestion Corridor (Red)</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-1 bg-[#FF2A3B] animate-pulse" />
+            <span className="text-[#FF6B6B] font-bold">GRIDLOCK CORRIDOR [RED]</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1 border-t-2 border-dashed border-cyan-500" />
-            <span className="text-cyan-400 font-medium">Hospital Evacuation Corridor</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-0.5 border-t border-dashed border-[#00F0FF]" />
+            <span className="text-[#00F0FF]">TRAUMA EVACUATION CORRIDOR</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-4 h-1 border-t-2 border-dashed border-amber-400" />
-            <span className="text-amber-300 font-medium">Pending Reallocation Diversion</span>
+          <div className="flex items-center gap-2 text-[#A0AAB8]">
+            <span className="w-4 h-0.5 border-t border-dashed border-[#F59E0B]" />
+            <span className="text-[#FCD34D]">REALLOCATION DIVERSION</span>
           </div>
           {showTraffic && (
-            <div className="flex items-center gap-2 text-slate-300 pt-1 border-t border-slate-800/60">
-              <span className="w-4 h-1.5 rounded bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-              <span className="text-red-300">Real-Time Traffic Bottleneck Overlay</span>
+            <div className="flex items-center gap-2 text-[#A0AAB8] pt-1 border-t border-[#1E2532]">
+              <span className="w-4 h-1 bg-[#FF2A3B]" />
+              <span className="text-[#FF6B6B]">REAL-TIME BOTTLENECK OVERLAY</span>
             </div>
           )}
         </div>
@@ -605,18 +605,18 @@ export const MapView: React.FC<MapViewProps> = ({
 
       {/* Missing Mapbox Token Fallback Overlay */}
       {isTokenMissing && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
-          <div className="max-w-md w-full p-6 rounded-xl tactical-glass border border-cyan-500/40 shadow-2xl text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-cyan-950/80 border border-cyan-400 flex items-center justify-center text-cyan-400">
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-[#06080C]/90 backdrop-blur-md">
+          <div className="max-w-md w-full p-6 tactical-surface-glass border border-[#FF2A3B] corner-crosshair shadow-2xl text-center">
+            <div className="w-12 h-12 mx-auto mb-4 bg-[#1e070a] border border-[#FF2A3B] flex items-center justify-center text-[#FF2A3B]">
               <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-wider mb-2 font-mono">
-              Mapbox Access Token Required
+            <h2 className="text-base font-bold text-[#EDECE8] uppercase tracking-wider mb-2 font-display">
+              MAPBOX ACCESS TOKEN REQUIRED
             </h2>
-            <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-              To activate the real-time Bengaluru geospatial vector canvas, provide a valid Mapbox Public Access Token. Set it in your <code className="text-cyan-300 font-mono">.env</code> as <code className="text-cyan-300 font-mono">VITE_MAPBOX_TOKEN</code> or enter it below:
+            <p className="text-xs text-[#7A8394] mb-5 leading-relaxed font-sans">
+              To activate the real-time Bengaluru geospatial vector canvas, provide a valid Mapbox Public Access Token in <code className="text-[#00F0FF] font-mono">.env</code> as <code className="text-[#00F0FF] font-mono">VITE_MAPBOX_TOKEN</code> or enter below:
             </p>
             <form onSubmit={handleManualTokenSubmit} className="space-y-3">
               <input
@@ -624,13 +624,13 @@ export const MapView: React.FC<MapViewProps> = ({
                 value={manualTokenInput}
                 onChange={(e) => setManualTokenInput(e.target.value)}
                 placeholder="pk.eyJ1IjoieW91cnVzZXIiLCJhIjoi..."
-                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-slate-900/90 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className="w-full px-3 py-2 text-xs font-mono bg-[#0D1017] border border-[#1E2532] text-[#EDECE8] placeholder-[#4A5568] focus:outline-none focus:border-[#00F0FF]"
               />
               <button
                 type="submit"
-                className="w-full py-2 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors shadow-lg shadow-cyan-900/50"
+                className="w-full py-2 px-4 bg-[#00F0FF] hover:bg-[#38F9D7] text-[#0A0C10] font-black text-xs uppercase tracking-wider transition-colors shadow-lg cursor-pointer"
               >
-                Initialize Control Map
+                INITIALIZE CONTROL MAP
               </button>
             </form>
           </div>
