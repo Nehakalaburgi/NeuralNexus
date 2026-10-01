@@ -176,12 +176,19 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Connection Status Pill */}
         <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 text-slate-400">
-          {isConnected ? (
+          {isMockMode ? (
+            <>
+              <Radio className="w-3 h-3 text-amber-400" />
+              <span className="text-amber-400 font-semibold">MOCK SIMULATION</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-slate-400">{lastHeartbeat ?? 'Offline'}</span>
+            </>
+          ) : isConnected ? (
             <>
               <Wifi className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400 font-semibold">FEED SYNC</span>
+              <span className="text-emerald-400 font-semibold">LIVE WS CONNECTED</span>
               <span className="text-slate-600">|</span>
-              <span>{lastHeartbeat ?? 'Live'}</span>
+              <span className="text-slate-300">{lastHeartbeat ?? 'Live'}</span>
             </>
           ) : (
             <>

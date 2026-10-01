@@ -273,7 +273,7 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
         socketRef.current.close();
         socketRef.current = null;
       }
-      setIsConnected(true);
+      setIsConnected(false);
       return;
     }
 
@@ -298,13 +298,84 @@ export const useEmergencyState = (): UseEmergencyStateReturn => {
             // Handle standard broadcast payload wrapper { event, data }
             const stateData = payload?.data ?? payload;
 
-            if (
-              stateData &&
-              typeof stateData === 'object' &&
-              ('systemStatus' in stateData || 'activeIncidents' in stateData)
-            ) {
-              setWorldState(stateData as WorldState);
-              setLastHeartbeat(getTimestamp());
+            if (stateData && typeof stateData === 'object') {
+              if ('systemStatus' in stateData || 'activeIncidents' in stateData) {
+                setWorldState(stateData as WorldState);
+                setLastHeartbeat(getTimestamp());
+              } else if ('incidents' in stateData || 'resources' in stateData) {
+                // Adapt MongoDB / backend ground truth payload
+                setWorldState((prev) => {
+                  const backendIncidents = Array.isArray(stateData.incidents) ? stateData.incidents : [];
+                  const backendResources = Array.isArray(stateData.resources) ? stateData.resources : [];
+                  const backendLogs = Array.isArray(stateData.logs) ? stateData.logs : [];
+
+                  const mappedIncidents = backendIncidents.map((inc: any, idx: number) => ({
+                    id: inc.id || inc._id?.toString() || `INC-0${idx + 1}`,
+                    title: inc.title || `Emergency #${idx + 1}`,
+                    severity: inc.severity || 3,
+                    location: {
+                      lat: Array.isArray(inc.coordinates) ? inc.coordinates[1] : (inc.location?.lat ?? 12.9716),
+                      lng: Array.isArray(inc.coordinates) ? inc.coordinates[0] : (inc.location?.lng ?? 77.5946),
+                      address: inc.locationName || inc.location?.address || 'Bengaluru Dispatch Sector',
+                    },
+                    status: (inc.status || 'PENDING') as any,
+                    requiredResources: Array.isArray(inc.requiredResources) ? inc.requiredResources : ['AMBULANCE'],
+                    assignedResourceId: inc.assignedResourceId,
+                    targetHospitalId: inc.targetHospitalId || 'HOSP-01',
+                    reportedAt: inc.createdAt ? new Date(inc.createdAt).toLocaleTimeString('en-US', { hour12: false }) : getTimestamp(),
+                    description: inc.description || '',
+                  }));
+
+                  const mappedResources = backendResources.map((res: any, idx: number) => {
+                    const typeMap: Record<string, any> = {
+                      ambulance: 'AMBULANCE',
+                      fireTruck: 'FIRE_TRUCK',
+                      rescueSquad: 'RESCUE_TEAM',
+                    };
+                    const statusMap: Record<string, any> = {
+                      IDLE: 'IDLE',
+                      AVAILABLE: 'IDLE',
+                      ASSIGNED: 'DISPATCHED',
+                      OUT_OF_SERVICE: 'UNAVAILABLE',
+                      REROUTED: 'REROUTED',
+                    };
+                    return {
+                      id: res.id || res.callsign || res._id?.toString() || `UNIT-0${idx + 1}`,
+                      name: res.callsign || res.name || `Unit ${idx + 1}`,
+                      type: typeMap[res.type] || res.type || 'AMBULANCE',
+                      status: statusMap[res.status] || res.status || 'IDLE',
+                      location: {
+                        lat: Array.isArray(res.coordinates) ? res.coordinates[1] : (res.location?.lat ?? 12.9550),
+                        lng: Array.isArray(res.coordinates) ? res.coordinates[0] : (res.location?.lng ?? 77.6050),
+                      },
+                      currentEtaMinutes: res.currentEtaMinutes ?? 4.0,
+                      assignedIncidentId: res.currentIncidentId ?? null,
+                    };
+                  });
+
+                  const mappedLogs = backendLogs.map((lg: any, idx: number) => ({
+                    id: lg._id?.toString() || `LOG-${Date.now()}-${idx}`,
+                    timestamp: lg.timestamp ? new Date(lg.timestamp).toLocaleTimeString('en-US', { hour12: false }) + ' IST' : getTimestamp(),
+                    agentName: (lg.actor && lg.actor.toUpperCase().includes('SENTINEL') ? 'COMMAND' : 'LOGISTICS') as any,
+                    message: lg.reason || `${lg.action}: ${JSON.stringify(lg.details || {})}`,
+                    severity: (lg.action === 'PREEMPTION' ? 'CRITICAL' : 'INFO') as any,
+                  }));
+
+                  return {
+                    ...prev,
+                    activeIncidents: mappedIncidents.length > 0 ? mappedIncidents : prev.activeIncidents,
+                    resources: mappedResources.length > 0 ? mappedResources : prev.resources,
+                    agentLogs: mappedLogs.length > 0 ? [...mappedLogs, ...prev.agentLogs].slice(0, 50) : prev.agentLogs,
+                    metrics: {
+                      ...prev.metrics,
+                      activeIncidents: mappedIncidents.length || prev.metrics.activeIncidents,
+                      availableResources: mappedResources.filter((r: any) => r.status === 'IDLE').length || prev.metrics.availableResources,
+                      totalFleet: mappedResources.length || prev.metrics.totalFleet,
+                    },
+                  };
+                });
+                setLastHeartbeat(getTimestamp());
+              }
             }
           } catch {
             // Malformed packet ignored in stream
