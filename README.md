@@ -270,12 +270,3 @@ $$\theta = \text{atan2}\left(\sin(\Delta\lambda)\cos(\phi_2), \; \cos(\phi_1)\si
 ### 3. Shortest-Arc Angular Steering Interpolation (`lerpAngle`)
 $$\text{diff} = ((\text{target} - \text{current} + 540) \pmod{360}) - 180$$
 $$\text{smoothedBearing} = (\text{current} + \text{diff} \cdot \alpha + 360) \pmod{360}$$
-
----
-
-## 🏆 Presentation & Live Demonstration Tips
-
-1. **Full-Screen Immersion**: Open [http://localhost:5173](http://localhost:5173). The interface automatically expands to fill your entire viewport with responsive tactical overlays.
-2. **Interactive Scenarios**: Use the bottom presentation dock to trigger **1. Normal Dispatch**, **2. Traffic Gridlock & Bypass**, and **3. Hospital Evacuation (Leg 2)**.
-3. **Variable Speed**: Toggle between `0.5x Slow`, `1.0x Normal`, and `2.0x Fast` to demonstrate high-speed decision-making or slow-motion turn-by-turn steering.
-4. **Live Backend Mode**: Toggle the badge in the top-right navbar from **MOCK DATA** to **LIVE WS** to connect to the Node.js backend.
